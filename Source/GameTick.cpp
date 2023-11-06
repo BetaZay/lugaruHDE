@@ -493,10 +493,20 @@ bool Game::LoadLevel(int which)
 
 bool Game::LoadLevel(const std::string& name, bool tutorial)
 {
-    const std::string level_path = Folders::getResourcePath("Maps/" + name);
+    std::string level_path = Folders::getResourcePath("Maps/" + name);
     if (!Folders::file_exists(level_path)) {
-        perror(std::string("LoadLevel: Could not open file '" + level_path).c_str());
-        return false;
+        std::vector<std::string> enabledMods = Folders::getEnabledMods();
+        for (const auto& mod : enabledMods) {
+            std::string modPath = Folders::getModResourcePath(mod, "Maps/" + name);
+            if (Folders::file_exists(modPath)) {
+                level_path = modPath;
+                break;
+            }
+        }
+        if (!Folders::file_exists(level_path)) {
+            perror(std::string("LoadLevel: Could not open file '" + level_path).c_str());
+            return false;
+        }
     }
 
     int indemo; // FIXME this should be removed

@@ -10,6 +10,8 @@ include(GNUInstallDirs)
 ### Helpers
 
 set(SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+set(CMAKE_CXX_STANDARD 17)
+
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
@@ -326,13 +328,13 @@ endif(APPLE)
 
 # Documentation
 
-install(FILES ${CMAKE_SOURCE_DIR}/AUTHORS
-              ${CMAKE_SOURCE_DIR}/CONTENT-LICENSE.txt
-              ${CMAKE_SOURCE_DIR}/COPYING.txt
-              ${CMAKE_SOURCE_DIR}/README.md
-              ${CMAKE_SOURCE_DIR}/RELEASE-NOTES.md
-              ${CMAKE_SOURCE_DIR}/Docs/DEVTOOLS.txt
-              ${CMAKE_SOURCE_DIR}/Docs/README.Empire.txt
-              ${CMAKE_SOURCE_DIR}/Docs/README.SevenTasks.txt
-              ${CMAKE_SOURCE_DIR}/Docs/README.Temple.txt
-        DESTINATION ${LUGARU_DOCDIR})
+#install(FILES ${CMAKE_SOURCE_DIR}/AUTHORS
+#              ${CMAKE_SOURCE_DIR}/CONTENT-LICENSE.txt
+#              ${CMAKE_SOURCE_DIR}/COPYING.txt
+#              ${CMAKE_SOURCE_DIR}/README.md
+#              ${CMAKE_SOURCE_DIR}/RELEASE-NOTES.md
+#              ${CMAKE_SOURCE_DIR}/Docs/DEVTOOLS.txt
+#              ${CMAKE_SOURCE_DIR}/Docs/README.Empire.txt
+#              ${CMAKE_SOURCE_DIR}/Docs/README.SevenTasks.txt
+#              ${CMAKE_SOURCE_DIR}/Docs/README.Temple.txt
+#        DESTINATION ${LUGARU_DOCDIR})

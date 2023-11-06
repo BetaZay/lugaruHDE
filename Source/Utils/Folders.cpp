@@ -13,7 +13,7 @@ Lugaru is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
+su
 You should have received a copy of the GNU General Public License
 along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,6 +24,13 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
+#include <map>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <dirent.h>
+#include <filesystem>
 
 #if PLATFORM_UNIX
 #include <pwd.h>
@@ -81,6 +88,77 @@ std::string Folders::getConfigFilePath()
 #endif
     return configFolder + "/config.txt";
 }
+
+int Folders::getNumMods() {
+    int numMods = 0;
+    std::string modListFilePath = getUserDataPath() + "/modlist.txt";
+    std::ifstream modListFile(modListFilePath);
+    if (modListFile.is_open()) {
+        std::string line;
+        while (std::getline(modListFile, line)) {
+            size_t modStatusPos = line.find(":");
+            if (modStatusPos != std::string::npos) {
+                int modStatus = std::stoi(line.substr(modStatusPos + 2));
+                if (modStatus == 1) {
+                    numMods++;
+                }
+            }
+        }
+        modListFile.close();
+    } else {
+        std::cerr << "Unable to open modlist.txt." << std::endl;
+    }
+    return numMods;
+}
+
+std::vector<std::string> Folders::getEnabledMods() {
+    std::vector<std::string> enabledMods;
+    std::ifstream modListFile(getUserDataPath() + "/modlist.txt");
+    if (modListFile.is_open()) {
+        std::string line;
+        while (std::getline(modListFile, line)) {
+            size_t modStatusPos = line.find(":");
+            if (modStatusPos != std::string::npos) {
+                std::string modName = line.substr(0, modStatusPos);
+                int modStatus = std::stoi(line.substr(modStatusPos + 1));
+                if (modStatus == 1) {
+                    enabledMods.push_back(modName);
+                }
+            }
+        }
+        modListFile.close();
+    } else {
+        std::cerr << "Unable to open modlist.txt." << std::endl;
+    }
+    return enabledMods;
+}
+
+std::string Folders::getModResourcePath(const std::string& modName, const std::string& resourceType) {
+    std::string modsFolderPath = getUserDataPath() + "/Mods/";
+    std::string modPath = modsFolderPath + modName + "/" + resourceType;
+    return modPath;
+}
+
+
+std::string Folders::createModListFile() {
+    std::string modsFolderPath = getUserDataPath() + "/Mods";
+    std::ofstream modListFile(getUserDataPath() + "/modlist.txt");
+    if (modListFile.is_open()) {
+        for (const auto& entry : std::filesystem::directory_iterator(modsFolderPath)) {
+            if (entry.is_directory()) {
+                std::string modName = entry.path().filename().string();
+                modListFile << modName << ": 0" << std::endl; // Updated line
+            }
+        }
+        modListFile.close();
+        std::cout << "modlist.txt created successfully." << std::endl;
+    } else {
+        std::cerr << "Unable to create modlist.txt." << std::endl;
+    }
+    return ""; // Return an empty string to resolve the crash
+}
+
+
 
 #if PLATFORM_LINUX
 /* Generic code for XDG ENVVAR test and fallback */

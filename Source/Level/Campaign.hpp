@@ -49,7 +49,7 @@ public:
     1 = Go back to the world map.
     2 = Don't bring up the Fiery loading screen. Maybe other things, I've not investigated.
     */
-    //int numnext; // 0 on final level. As David said: he meant to add story branching, but he eventually hadn't.
+    //int numnext; // 0 on the final level. As David said: he meant to add story branching, but he eventually hadn't.
     std::vector<int> nextlevel;
     Position location;
     CampaignLevel();
@@ -67,3 +67,7 @@ public:
 };
 
 extern std::vector<CampaignLevel> campaignlevels;
+
+std::vector<std::string> getEnabledMods();
+std::string getModResourcePath(const std::string& modName, const std::string& resourceType);
+

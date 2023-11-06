@@ -26,10 +26,15 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include "User/Settings.hpp"
 #include "Utils/Input.hpp"
 #include "Version.hpp"
+#include "Utils/Folders.hpp"
 
 // Should not be needed, Menu should call methods from other classes to launch maps and challenges and so on
 #include "Level/Awards.hpp"
 
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -331,6 +336,7 @@ void Menu::updateSettingsMenu()
     } else {
         setText(8, "Back (some changes take effect next time Lugaru is opened)");
     }
+    setText(15, "Mods");
 }
 
 void Menu::updateStereoConfigMenu()
@@ -356,13 +362,100 @@ void Menu::updateControlsMenu()
     }
 }
 
+void Menu::updateModsMenu() {
+    try {
+        std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
+        if (!Folders::file_exists(modListFilePath)) {
+            std::cerr << "modlist.txt does not exist. Creating the file..." << std::endl;
+            Folders::createModListFile(); // Call to create the modlist.txt file
+        }
+
+        std::ifstream modListFile(modListFilePath);
+        std::string modName;
+        int index = 1;
+
+        if (modListFile.is_open()) {
+            while (getline(modListFile, modName)) {
+                // Assuming the format of modlist.txt is "ModName: 0/1"
+                size_t pos = modName.find(":");
+                if (pos != std::string::npos) {
+                    std::string modToggleStatus = modName.substr(pos + 2);
+                    modName = modName.substr(0, pos);
+                    std::string toggleStatus = (modToggleStatus == "1") ? "Enabled" : "Disabled";
+                    setText(index, modName + ": " + toggleStatus);
+                    index++;
+                    if (index > 5) {
+                        break; // Assuming you have at most 5 mods displayed in the menu
+                    }
+                }
+            }
+            modListFile.close();
+        } else {
+            std::cerr << "Unable to open " << modListFilePath << std::endl;
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "An exception occurred: " << e.what() << std::endl;
+    }
+}
+
+void Menu::toggleModStatus(int lineNumber) {
+    std::cerr << "Toggling Mod..." << std::endl;
+    std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
+
+    if (!Folders::file_exists(modListFilePath)) {
+        std::cerr << "modlist.txt does not exist. Creating the file..." << std::endl;
+        Folders::createModListFile(); // Call to create the modlist.txt file
+    }
+
+    std::ifstream modListFileIn(modListFilePath);
+    std::ofstream modListFileOut(modListFilePath + ".tmp");
+    std::string line;
+    int currentLine = 1;
+    bool modFound = false;
+
+    if (modListFileIn.is_open() && modListFileOut.is_open()) {
+        while (getline(modListFileIn, line)) {
+            if (currentLine == lineNumber) {
+                modFound = true;
+                size_t togglePos = line.find_last_of(":");
+                if (togglePos != std::string::npos) {
+                    std::string status = line.substr(togglePos + 2);
+                    if (status == "0") {
+                        line.replace(togglePos + 2, 1, "1");
+                    } else if (status == "1") {
+                        line.replace(togglePos + 2, 1, "0");
+                    }
+                }
+            }
+            modListFileOut << line << std::endl;
+            currentLine++;
+        }
+        modListFileIn.close();
+        modListFileOut.close();
+
+        if (modFound) {
+            try {
+                std::filesystem::remove(modListFilePath);
+                std::filesystem::rename(modListFilePath + ".tmp", modListFilePath);
+            } catch (const std::filesystem::filesystem_error& e) {
+                std::cerr << "Error while updating modlist.txt: " << e.what() << std::endl;
+            }
+        } else {
+            std::cerr << "Mod not found in modlist.txt" << std::endl;
+        }
+    } else {
+        std::cerr << "Unable to open " << modListFilePath << std::endl;
+    }
+}
+
+
 /*
 Values of mainmenu :
 1 Main menu
 2 Menu pause (resume/end game)
 3 Option menu
 4 Controls configuration menu
-5 Main game menu (choose level or challenge)
+5 Main game menu (choose level or challenge) / The Map Screen
 6 Deleting user menu
 7 User managment menu (select/add)
 8 Choose difficulty menu
@@ -388,6 +481,9 @@ void Menu::Load()
             addButton(0, "", 10 + 20, 440);
             addButton(14, "", 10 + 400, 440);
             addButton(1, "", 10 + 60, 405);
+            if (!gameon) {
+                addButton(15, "", 10 + 400, 405);
+            }
             addButton(2, "", 10 + 70, 370);
             addButton(4, "", 10, 335);
             addButton(5, "", 10 + 60, 300);
@@ -517,6 +613,17 @@ void Menu::Load()
             addButton(3, "Back", 10, 10);
             updateStereoConfigMenu();
             break;
+        case 19: // New case for the Mods menu
+            addLabel(0, "Mods Menu", 10, 400);
+            addButton(1, "", 10, 360); // Replace with the desired mod information
+            addButton(2, "", 10, 320);
+            addButton(3, "", 10, 280);
+            addButton(4, "", 10, 240);
+            addButton(5, "", 10, 200);
+            addButton(6, "Back", 10, 10); // Back button for the Mods menu
+            // ... (additional elements for the Mods menu)
+            updateModsMenu();
+            break;
     }
 }
 
@@ -550,6 +657,9 @@ void Menu::Tick()
             case 9:
             case 10:
                 mainmenu = 5;
+                break;
+            case 19:
+                mainmenu = 3;
                 break;
         }
     }
@@ -711,6 +821,9 @@ void Menu::Tick()
                         break;
                     case 14:
                         toggleFullscreen();
+                        break;
+                    case 15: //mod menu
+                        mainmenu = 19;
                         break;
                 }
                 updateSettingsMenu();
@@ -902,6 +1015,34 @@ void Menu::Tick()
                     }
                 }
                 updateStereoConfigMenu();
+                break;
+            case 19:
+                fireSound();
+                flash();
+                switch (selected) {
+                    case 1:
+                        toggleModStatus(1); // Replace "Mod5" with the actual name of the mod
+                        break;
+                    case 2:
+                        toggleModStatus(2); // Replace "Mod5" with the actual name of the mod
+                        break;
+                    case 3:
+                        toggleModStatus(3); // Replace "Mod5" with the actual name of the mod
+                        break;
+                    case 4:
+                        toggleModStatus(4); // Replace "Mod5" with the actual name of the mod
+                        break;
+                    case 5:
+                        toggleModStatus(5); // Replace "Mod5" with the actual name of the mod
+                        break;
+                    case 6:
+                        // Go back to the main menu
+                        fireSound();
+                        flash();
+                        mainmenu = 1;
+                        break;
+                    }
+                updateModsMenu();
                 break;
         }
     }

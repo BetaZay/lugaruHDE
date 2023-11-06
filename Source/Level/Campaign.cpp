@@ -19,10 +19,8 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "Level/Campaign.hpp"
-
 #include "Game.hpp"
 #include "Utils/Folders.hpp"
-
 #include <dirent.h>
 
 using namespace Game;
@@ -36,24 +34,49 @@ std::string campaignEndText[3];
 
 std::vector<std::string> ListCampaigns()
 {
-    errno = 0;
-    DIR* campaigns = opendir(Folders::getResourcePath("Campaigns").c_str());
-    struct dirent* campaign = NULL;
-    if (!campaigns) {
-        perror(("Problem while loading campaigns from " + Folders::getResourcePath("Campaigns")).c_str());
-        exit(EXIT_FAILURE);
-    }
     std::vector<std::string> campaignNames;
-    while ((campaign = readdir(campaigns)) != NULL) {
-        std::string name(campaign->d_name);
-        if (name.length() < 5) {
-            continue;
-        }
-        if (!name.compare(name.length() - 4, 4, ".txt")) {
-            campaignNames.push_back(name.substr(0, name.length() - 4));
+
+    // Load campaigns from the Data folder and enabled mods
+    std::string dataPath = Folders::getResourcePath("/Campaigns");
+    if (!dataPath.empty()) {
+        DIR* campaignsDir = opendir(dataPath.c_str());
+        struct dirent* campaign = NULL;
+        if (campaignsDir) {
+            while ((campaign = readdir(campaignsDir)) != NULL) {
+                std::string name(campaign->d_name);
+                if (name.length() < 5) {
+                    continue;
+                }
+                if (!name.compare(name.length() - 4, 4, ".txt")) {
+                    campaignNames.push_back(name.substr(0, name.length() - 4));
+                }
+            }
+            closedir(campaignsDir);
         }
     }
-    closedir(campaigns);
+
+    // Load campaigns from enabled mods
+    std::vector<std::string> enabledMods = Folders::getEnabledMods();
+    for (const auto& mod : enabledMods) {
+        std::string modPath = Folders::getModResourcePath(mod, "/Campaigns");
+        if (!modPath.empty()) {
+            DIR* modCampaignsDir = opendir(modPath.c_str());
+            struct dirent* modCampaign = NULL;
+            if (modCampaignsDir) {
+                while ((modCampaign = readdir(modCampaignsDir)) != NULL) {
+                    std::string name(modCampaign->d_name);
+                    if (name.length() < 5) {
+                        continue;
+                    }
+                    if (!name.compare(name.length() - 4, 4, ".txt")) {
+                        campaignNames.push_back(name.substr(0, name.length() - 4));
+                    }
+                }
+                closedir(modCampaignsDir);
+            }
+        }
+    }
+
     return campaignNames;
 }
 
@@ -62,16 +85,41 @@ void LoadCampaign()
     if (!Account::hasActive()) {
         return;
     }
-    std::ifstream ipstream(Folders::getResourcePath("Campaigns/" + Account::active().getCurrentCampaign() + ".txt"));
-    if (!ipstream.good()) {
+    std::string campaignPath = Folders::getResourcePath("/Campaigns/" + Account::active().getCurrentCampaign() + ".txt");
+    bool found = false;
+
+    // Check the main Data folder first
+    std::ifstream ipstream(campaignPath);
+    if (ipstream.good()) {
+        found = true;
+        ipstream.close();
+    } else {
+        // Look for the campaign in enabled mods
+        for (const auto &mod : Folders::getEnabledMods()) {
+            std::string modCampaignPath = Folders::getModResourcePath(mod, "/Campaigns/" + Account::active().getCurrentCampaign() + ".txt");
+            std::ifstream modStream(modCampaignPath);
+            if (modStream.good()) {
+                campaignPath = modCampaignPath;
+                found = true;
+                modStream.close();
+                break;
+            }
+            modStream.close();
+        }
+    }
+
+    if (!found) {
         if (Account::active().getCurrentCampaign() == "main") {
-            cerr << "Could not find main campaign!" << endl;
+            std::cerr << "Could not find main campaign!" << std::endl;
             return;
         }
-        cerr << "Could not find campaign \"" << Account::active().getCurrentCampaign() << "\", falling back to main." << endl;
+        std::cerr << "Could not find campaign \"" << Account::active().getCurrentCampaign() << "\", falling back to main." << std::endl;
         Account::active().setCurrentCampaign("main");
-        return LoadCampaign();
+        LoadCampaign();
+        return;
     }
+
+    ipstream.open(campaignPath);
     ipstream.ignore(256, ':');
     int numlevels;
     ipstream >> numlevels;
@@ -82,7 +130,7 @@ void LoadCampaign()
         campaignlevels.push_back(cl);
     }
     campaignEndText[0] = "Congratulations!";
-    campaignEndText[1] = string("You have completed ") + Account::active().getCurrentCampaign() + " campaign";
+    campaignEndText[1] = "You have completed " + Account::active().getCurrentCampaign() + " campaign";
     campaignEndText[2] = "and restored peace to the island of Lugaru.";
     if (ipstream.good()) {
         ipstream.ignore(256, ':');
@@ -92,7 +140,7 @@ void LoadCampaign()
     }
     ipstream.close();
 
-    std::ifstream test(Folders::getResourcePath("Textures/" + Account::active().getCurrentCampaign() + "/World.png"));
+    std::ifstream test(Folders::getResourcePath("/Textures/" + Account::active().getCurrentCampaign() + "/World.png"));
     if (test.good()) {
         Mainmenuitems[7].load("Textures/" + Account::active().getCurrentCampaign() + "/World.png", 0);
     } else {

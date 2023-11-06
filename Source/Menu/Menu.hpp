@@ -72,7 +72,10 @@ public:
     static void updateSettingsMenu();
     static void updateStereoConfigMenu();
     static void updateControlsMenu();
+    static void updateModsMenu();
     static void setKeySelected();
+    
+    static void toggleModStatus(int lineNumber);
 
 private:
     static void handleFadeEffect();
