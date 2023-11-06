@@ -1,3 +1,11 @@
+# Lugaru HDE
+This is a fork from OSS Lugaru Version 1.2 looking to add proper mod support via a mod menu.
+And update the codebase as much as possible.
+Look forward to new releases soon!
+
+I was also able to get this running as a "native" apple silicon app so YAY!
+See compilation instructions on that.
+
 # Lugaru HD
 
 [![build status](https://gitlab.com/osslugaru/lugaru/badges/master/build.svg)](https://gitlab.com/osslugaru/lugaru/commits/master)
