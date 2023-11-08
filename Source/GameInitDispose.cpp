@@ -582,6 +582,8 @@ void Game::InitGame()
     Mainmenuitems[4].load("Textures/Eyelid.png", 0);
     Mainmenuitems[5].load("Textures/Resume.png", 0);
     Mainmenuitems[6].load("Textures/EndGame.png", 0);
+    Mainmenuitems[8].load("Textures/Mods.png", 0);
+    Mainmenuitems[9].load("Textures/Restart.png", 0);
 
     texdetail = temptexdetail;
 

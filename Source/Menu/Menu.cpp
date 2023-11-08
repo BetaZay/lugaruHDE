@@ -27,6 +27,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include "Utils/Input.hpp"
 #include "Version.hpp"
 #include "Utils/Folders.hpp"
+#include "Game.hpp"
 
 // Should not be needed, Menu should call methods from other classes to launch maps and challenges and so on
 #include "Level/Awards.hpp"
@@ -53,6 +54,7 @@ extern int whichchoice;
 extern int leveltheme;
 
 extern void toggleFullscreen();
+
 
 int entername = 0;
 std::string newusername = "";
@@ -153,6 +155,12 @@ void Menu::setText(int id, const string& text, int x, int y, int w, int h)
     }
 }
 
+/**
+ * Returns the ID of the menu item that is currently selected by the mouse.
+ * @param mousex The x-coordinate of the mouse cursor.
+ * @param mousey The y-coordinate of the mouse cursor.
+ * @return The ID of the selected menu item, or -1 if no item is selected.
+ */
 int Menu::getSelected(int mousex, int mousey)
 {
     for (vector<MenuItem>::reverse_iterator it = items.rbegin(); it != items.rend(); it++) {
@@ -171,6 +179,10 @@ int Menu::getSelected(int mousex, int mousey)
     return -1;
 }
 
+/**
+ * Handles the fade effect for the menu items.
+ * The effect is applied to the currently selected item and fades in/out based on the multiplier.
+ */
 void Menu::handleFadeEffect()
 {
     for (vector<MenuItem>::iterator it = items.begin(); it != items.end(); it++) {
@@ -188,6 +200,9 @@ void Menu::handleFadeEffect()
     }
 }
 
+/**
+ * Draws all the menu items in the menu.
+ */
 void Menu::drawItems()
 {
     handleFadeEffect();
@@ -298,6 +313,13 @@ void Menu::drawItems()
     }
 }
 
+/**
+ * Updates the settings menu with the current settings values.
+ * 
+ * This function updates the settings menu with the current values of the game settings, such as resolution, detail level, blood toggle, 
+ * motion blur, decals, music, mouse sensitivity, volume, damage bar, and fullscreen mode. 
+ * It also sets the "Back" button text based on whether any changes have been made that require restarting the game to take effect.
+ */
 void Menu::updateSettingsMenu()
 {
     std::string sbuf = std::string("Resolution: ") + to_string(newscreenwidth) + "*" + to_string(newscreenheight);
@@ -339,6 +361,9 @@ void Menu::updateSettingsMenu()
     setText(15, "Mods");
 }
 
+/**
+ * Updates the stereo configuration menu with the current stereo mode, separation, and reverse settings.
+ */
 void Menu::updateStereoConfigMenu()
 {
     setText(0, std::string("Stereo mode: ") + StereoModeName(newstereomode));
@@ -346,6 +371,9 @@ void Menu::updateStereoConfigMenu()
     setText(2, std::string("Reverse stereo: ") + (stereoreverse ? "Yes" : "No"));
 }
 
+/**
+ * Updates the controls menu with the current key bindings.
+ */
 void Menu::updateControlsMenu()
 {
     setText(0, (string) "Forwards: " + (keyselect == 0 ? "_" : Input::keyToChar(forwardkey)));
@@ -362,6 +390,15 @@ void Menu::updateControlsMenu()
     }
 }
 
+/**
+ * @brief Updates the mods menu with the list of installed mods and their toggle status.
+ * 
+ * @details Reads the modlist.txt file and displays the mod names and their toggle status in the mods menu.
+ * Assumes the format of modlist.txt is "ModName: 0/1". If modlist.txt does not exist, creates the file.
+ * Assumes at most 5 mods are displayed in the menu.
+ * 
+ * @throws std::exception if an error occurs while reading the modlist.txt file.
+ */
 void Menu::updateModsMenu() {
     try {
         std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
@@ -398,6 +435,10 @@ void Menu::updateModsMenu() {
     }
 }
 
+/**
+ * Toggles the status of a mod in the modlist.txt file.
+ * @param lineNumber The line number of the mod to toggle.
+ */
 void Menu::toggleModStatus(int lineNumber) {
     std::cerr << "Toggling Mod..." << std::endl;
     std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
@@ -463,6 +504,7 @@ Values of mainmenu :
 10 End of the campaign congratulation (is that really a menu?)
 11 Same that 9 ??? => unused
 18 stereo configuration
+19 Mod menu
 */
 
 void Menu::Load()
@@ -471,10 +513,11 @@ void Menu::Load()
     switch (mainmenu) {
         case 1:
         case 2:
-            addImage(0, Mainmenuitems[0], 150, 480 - 128, 256, 128);
-            addButtonImage(1, Mainmenuitems[mainmenu == 1 ? 1 : 5], 18, 480 - 152 - 32, 128, 32);
-            addButtonImage(2, Mainmenuitems[2], 18, 480 - 228 - 32, 112, 32);
-            addButtonImage(3, Mainmenuitems[mainmenu == 1 ? 3 : 6], 18, 480 - 306 - 32, mainmenu == 1 ? 68 : 132, 32);
+            addImage(0, Mainmenuitems[0], 150, 480 - 128, 256, 128); //Lugaru logo
+            addButtonImage(1, Mainmenuitems[mainmenu == 1 ? 1 : 5], 18, 320, 128, 32); // Start if main menu, Resume if pause menu
+            addButtonImage(3, Mainmenuitems[mainmenu == 1 ? 8 : 9], 18, 240, mainmenu == 1 ? 68 : 128, 32); // Mods if main menu, Restart if pause menu
+            addButtonImage(2, Mainmenuitems[2], 18, 160, 112, 32); // Options
+            addButtonImage(4, Mainmenuitems[mainmenu == 1 ? 3 : 6], 18, 80, mainmenu == 1 ? 68 : 132, 32); // Quit if main menu, EndGame if pause menu
             addLabel(-1, VERSION_NUMBER + VERSION_SUFFIX, 640 - 100, 10);
             break;
         case 3:
@@ -614,7 +657,7 @@ void Menu::Load()
             updateStereoConfigMenu();
             break;
         case 19: // New case for the Mods menu
-            addLabel(0, "Mods Menu", 10, 400);
+            addLabel(0, "Mods...", 10, 400);
             addButton(1, "", 10, 360); // Replace with the desired mod information
             addButton(2, "", 10, 320);
             addButton(3, "", 10, 280);
@@ -659,7 +702,7 @@ void Menu::Tick()
                 mainmenu = 5;
                 break;
             case 19:
-                mainmenu = 3;
+                mainmenu = 1;
                 break;
         }
     }
@@ -724,6 +767,20 @@ void Menu::Tick()
                         }
                         break;
                     case 3:
+                        fireSound();
+                        flash();
+                        if (gameon) { //restart
+                            mainmenu = 0;
+                            fireSound(firestartsound);
+                            flash();
+                            Game::RestartLevel();
+                            pause_sound(stream_menutheme);
+                            resume_stream(leveltheme);
+                        } else { //mods
+                            mainmenu = 19;
+                        }
+                        break;
+                    case 4:
                         fireSound();
                         flash();
                         if (gameon) { //end game
@@ -1018,22 +1075,21 @@ void Menu::Tick()
                 break;
             case 19:
                 fireSound();
-                flash();
                 switch (selected) {
                     case 1:
-                        toggleModStatus(1); // Replace "Mod5" with the actual name of the mod
+                        toggleModStatus(1);
                         break;
                     case 2:
-                        toggleModStatus(2); // Replace "Mod5" with the actual name of the mod
+                        toggleModStatus(2);
                         break;
                     case 3:
-                        toggleModStatus(3); // Replace "Mod5" with the actual name of the mod
+                        toggleModStatus(3);
                         break;
                     case 4:
-                        toggleModStatus(4); // Replace "Mod5" with the actual name of the mod
+                        toggleModStatus(4);
                         break;
                     case 5:
-                        toggleModStatus(5); // Replace "Mod5" with the actual name of the mod
+                        toggleModStatus(5);
                         break;
                     case 6:
                         // Go back to the main menu

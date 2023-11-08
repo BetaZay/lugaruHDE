@@ -937,6 +937,12 @@ bool Game::LoadLevel(const std::string& name, bool tutorial)
     return true;
 }
 
+void Game::RestartLevel() {
+    targetlevel = whichlevel;
+    loading = 2;
+    leveltime = 5;
+}
+
 /* Process input events that impact settings, console, devtools, etc.
  * Gameplay-related input processing is still done in Game::Tick() for now
  * as it is tightly coupled to the game logic.
@@ -4396,12 +4402,6 @@ void Game::Tick()
                 Person::players[k]->DoAnimations();
                 Person::players[k]->whichpatchx = Person::players[k]->coords.x / (terrain.size / subdivision * terrain.scale);
                 Person::players[k]->whichpatchz = Person::players[k]->coords.z / (terrain.size / subdivision * terrain.scale);
-            }
-        
-            if (Input::isKeyPressed(SDL_SCANCODE_R)){
-                targetlevel = whichlevel;
-                loading = 1;
-                leveltime = 5;
             }
 
             //do stuff

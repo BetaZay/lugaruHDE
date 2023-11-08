@@ -147,6 +147,8 @@ int findClosestPlayer();
 bool LoadLevel(int which);
 bool LoadLevel(const std::string& name, bool tutorial = false);
 
+void RestartLevel();
+
 void ProcessInput();
 void ProcessDevInput();
 
