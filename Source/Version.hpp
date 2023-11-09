@@ -25,7 +25,7 @@ const unsigned int VERSION_PATCH = 1;
 const std::string VERSION_NUMBER = "1.2.1";
 
 /** Set to "" for stable (tagged) builds, "-dev" for dev builds */
-const std::string VERSION_SUFFIX = "-dev";
+const std::string VERSION_SUFFIX = "";
 /** Set to 7-char git commit hash if available, otherwise "" */
 const std::string VERSION_HASH = "";
 /** Optional release string, e.g. for distro packages release number */
@@ -40,7 +40,7 @@ const std::string VERSION_RELEASE = "";
  *      "1.2-dev (git ab12c34) [OSS Lugaru official]"
  *      "1.3.1 [Mageia 1.3.1-2.mga6]"
  */
-const std::string VERSION_STRING = "1.2.1-dev";
+const std::string VERSION_STRING = "1.2.1";
 
 /** Build type (Release, Debug, RelWithDebInfo) to output to the terminal */
 const std::string VERSION_BUILD_TYPE = "";

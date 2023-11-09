@@ -23,7 +23,7 @@ endif()
 # Version for the current (stable) or next (development) release
 set(LUGARU_VERSION_MAJOR 1)
 set(LUGARU_VERSION_MINOR 2)
-set(LUGARU_VERSION_PATCH 0)
+set(LUGARU_VERSION_PATCH 1)
 
 # MAJOR.MINOR, or MAJOR.MINOR.PATCH if PATCH != 0
 set(LUGARU_VERSION_NUMBER "${LUGARU_VERSION_MAJOR}.${LUGARU_VERSION_MINOR}")
@@ -33,7 +33,7 @@ endif()
 
 # Set to "" for stable (tagged) builds, "-dev" for dev builds
 #set(LUGARU_VERSION_SUFFIX "-dev")  # development
-set(LUGARU_VERSION_SUFFIX "")  # stable
+set(LUGARU_VERSION_SUFFIX "-dev")  # stable
 
 # Set to 7-char git commit hash if available, otherwise "".
 # On stable (tagged) builds, this is ignored.
