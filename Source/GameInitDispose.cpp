@@ -604,6 +604,8 @@ void Game::InitGame()
     Animation::loadAll();
 
     PersonType::Load();
+
+    Folders::createModListFile();
 }
 
 void Game::LoadScreenTexture()

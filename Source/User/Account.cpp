@@ -45,7 +45,7 @@ Account::Account(const string& name)
     memset(fasttime, 0, sizeof(fasttime));
     memset(unlocked, 0, sizeof(unlocked));
 
-    setCurrentCampaign("main");
+    setCurrentCampaign("lugaru");
 }
 
 Account::Account(FILE* tfile)

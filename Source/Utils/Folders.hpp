@@ -63,6 +63,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
         static std::vector<std::string> getEnabledMods();
 
         /** Creates the modlist.txt file in the Mods folder */
+        static std::string updateModListFile();
         static std::string createModListFile();
 
         static FILE* openMandatoryFile(const std::string& filename, const char* mode);

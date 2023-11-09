@@ -515,7 +515,7 @@ void Menu::Load()
         case 2:
             addImage(0, Mainmenuitems[0], 150, 480 - 128, 256, 128); //Lugaru logo
             addButtonImage(1, Mainmenuitems[mainmenu == 1 ? 1 : 5], 18, 320, 128, 32); // Start if main menu, Resume if pause menu
-            addButtonImage(3, Mainmenuitems[mainmenu == 1 ? 8 : 9], 18, 240, mainmenu == 1 ? 68 : 128, 32); // Mods if main menu, Restart if pause menu
+            addButtonImage(3, Mainmenuitems[mainmenu == 1 ? 8 : 9], 18, 240, 128, 32); // Mods if main menu, Restart if pause menu
             addButtonImage(2, Mainmenuitems[2], 18, 160, 112, 32); // Options
             addButtonImage(4, Mainmenuitems[mainmenu == 1 ? 3 : 6], 18, 80, mainmenu == 1 ? 68 : 132, 32); // Quit if main menu, EndGame if pause menu
             addLabel(-1, VERSION_NUMBER + VERSION_SUFFIX, 640 - 100, 10);

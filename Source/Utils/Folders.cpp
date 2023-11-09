@@ -31,6 +31,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <dirent.h>
 #include <filesystem>
+#include <unordered_set>
 
 #if PLATFORM_UNIX
 #include <pwd.h>
@@ -139,26 +140,106 @@ std::string Folders::getModResourcePath(const std::string& modName, const std::s
     return modPath;
 }
 
-
 std::string Folders::createModListFile() {
     std::string modsFolderPath = getUserDataPath() + "/Mods";
-    std::ofstream modListFile(getUserDataPath() + "/modlist.txt");
-    if (modListFile.is_open()) {
-        for (const auto& entry : std::filesystem::directory_iterator(modsFolderPath)) {
-            if (entry.is_directory()) {
-                std::string modName = entry.path().filename().string();
-                modListFile << modName << ": 0" << std::endl; // Updated line
-            }
+    if (!std::filesystem::exists(modsFolderPath)) {
+        if (!makeDirectory(modsFolderPath)) {
+            std::cerr << "Unable to create Mods folder." << std::endl;
+            return "";
+        }
+        std::cout << "Mods folder created successfully." << std::endl;
+    }
+
+    std::string modListFilePath = getUserDataPath() + "/modlist.txt";
+
+    if (!std::filesystem::exists(modListFilePath)) {
+        std::ofstream modListFile(modListFilePath);
+        if (!modListFile.is_open()) {
+            std::cerr << "Unable to create modlist.txt." << std::endl;
+            return "";
         }
         modListFile.close();
-        std::cout << "modlist.txt created successfully." << std::endl;
+        if (std::filesystem::exists(modListFilePath)) {
+            std::cout << "modlist.txt created successfully." << std::endl;
+        } else {
+            std::cerr << "Unable to create modlist.txt." << std::endl;
+            return "";
+        }
     } else {
-        std::cerr << "Unable to create modlist.txt." << std::endl;
+        // File already exists, update it
+        return updateModListFile();
     }
-    return ""; // Return an empty string to resolve the crash
+
+    return "modlist.txt created successfully";
 }
 
+std::string Folders::updateModListFile() {
+    std::string modsFolderPath = getUserDataPath() + "/Mods";
+    std::string modListFilePath = getUserDataPath() + "/modlist.txt";
 
+    std::unordered_set<std::string> installedMods;
+    std::unordered_set<std::string> currentMods;
+
+    // Read existing modlist data
+    if (std::filesystem::exists(modListFilePath)) {
+        std::ifstream inputFile(modListFilePath);
+        if (inputFile.is_open()) {
+            std::string line;
+            while (std::getline(inputFile, line)) {
+                std::size_t pos = line.find(":");
+                if (pos != std::string::npos) {
+                    std::string modName = line.substr(0, pos);
+                    installedMods.insert(modName);
+                }
+            }
+            inputFile.close();
+        } else {
+            std::cerr << "Unable to read modlist.txt." << std::endl;
+            return "";
+        }
+    }
+
+    // Update the modlist data
+    std::ofstream modListFile(modListFilePath, std::ios::trunc);
+    if (!modListFile.is_open()) {
+        std::cerr << "Unable to update modlist.txt." << std::endl;
+        return "";
+    }
+
+    for (const auto &entry : std::filesystem::directory_iterator(modsFolderPath)) {
+        if (entry.is_directory()) {
+            std::string modName = entry.path().filename().string();
+            currentMods.insert(modName);
+            if (installedMods.find(modName) == installedMods.end()) {
+                // Mod not found in the existing modlist, so write it with the default value
+                modListFile << modName << ": 0" << std::endl;
+            } else {
+                // Mod found in the existing modlist, so write it as is
+                modListFile << modName << ": 1" << std::endl;
+                installedMods.erase(modName); // Remove the mod from the installed set
+            }
+        }
+    }
+
+    // Write any remaining installed mods that are no longer present in the directory
+    for (const auto &mod : installedMods) {
+        if (currentMods.find(mod) == currentMods.end()) {
+            // Mod no longer exists in the Mods folder, so don't write it
+            continue;
+        }
+        modListFile << mod << ": 0" << std::endl;
+    }
+
+    modListFile.close();
+
+    if (std::filesystem::exists(modListFilePath)) {
+        std::cout << "modlist.txt updated successfully." << std::endl;
+        return "modlist.txt updated successfully";
+    } else {
+        std::cerr << "Unable to update modlist.txt." << std::endl;
+        return "";
+    }
+}
 
 #if PLATFORM_LINUX
 /* Generic code for XDG ENVVAR test and fallback */

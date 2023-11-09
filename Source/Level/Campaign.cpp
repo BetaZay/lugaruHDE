@@ -109,12 +109,12 @@ void LoadCampaign()
     }
 
     if (!found) {
-        if (Account::active().getCurrentCampaign() == "main") {
+        if (Account::active().getCurrentCampaign() == "lugaru") {
             std::cerr << "Could not find main campaign!" << std::endl;
             return;
         }
         std::cerr << "Could not find campaign \"" << Account::active().getCurrentCampaign() << "\", falling back to main." << std::endl;
-        Account::active().setCurrentCampaign("main");
+        Account::active().setCurrentCampaign("lugaru");
         LoadCampaign();
         return;
     }
