@@ -564,7 +564,7 @@ void Menu::Load()
             addButton(3, "Delete User", 400, 10);
             addButton(4, "Main Menu", 5, 10);
             addButton(5, "Change User", 5, 180);
-            addButton(6, "Campaign : " + Account::active().getCurrentCampaign(), 200, 420);
+            addButton(6, "Campaign: " + Account::active().getCurrentCampaign(), 200, 420);
 
             //show campaign map
             //with (2,-5) offset from old code

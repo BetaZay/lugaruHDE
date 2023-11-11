@@ -33,8 +33,11 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <string.h>
 #include <zlib.h>
+#include <chrono>
+#include <thread>
 
 using namespace Game;
+using namespace std::chrono;
 
 #ifdef WIN32
 #include <shellapi.h>
@@ -378,43 +381,67 @@ void DoFrameRate(int update)
     }
 }
 
+static bool IsFocused()
+{
+    return ((SDL_GetWindowFlags(sdlwindow) & SDL_WINDOW_INPUT_FOCUS) != 0);
+}
+
 void DoUpdate()
 {
     static float sps = 200;
-    static int count;
     static float oldmult;
 
-    DoFrameRate(1);
-    if (multiplier > .6) {
-        multiplier = .6;
-    }
+    // Measure time elapsed since the last frame
+    static auto lastTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+
+    // Update the last frame time
+    lastTime = currentTime;
+
+    // Calculate the effective frame rate based on focus state
+    bool windowInFocus = IsFocused();
+    float effectiveFrameRate = windowInFocus ? 1.0f : 0.1f;
+
+    // Adjust multiplier based on deltaTime and effectiveFrameRate
+    multiplier = effectiveFrameRate * deltaTime;
 
     fps = 1 / multiplier;
 
-    count = multiplier * sps;
+    int count = static_cast<int>(sps * deltaTime);
     if (count < 2) {
         count = 2;
     }
 
     realmultiplier = multiplier;
     multiplier *= gamespeed;
+
     if (difficulty == 1) {
-        multiplier *= .9;
+        multiplier *= 0.9;
     }
+
     if (difficulty == 0) {
-        multiplier *= .8;
+        multiplier *= 0.8;
     }
 
     if (loading == 4) {
-        multiplier *= .00001;
+        multiplier *= 0.00001;
     }
+
     if (slomo && !mainmenu) {
         multiplier *= slomospeed;
     }
-    oldmult = multiplier;
-    multiplier /= (float)count;
 
-    DoMouse();
+    oldmult = multiplier;
+    multiplier /= static_cast<float>(count);
+    if (windowInFocus) {
+        DoMouse();
+    } else {
+        
+        if (!mainmenu && gameon) {
+            mainmenu = 2;
+        }
+    }
 
     TickOnce();
 
@@ -424,40 +451,7 @@ void DoUpdate()
     multiplier = oldmult;
 
     TickOnceAfter();
-    /* - Debug code to test how many channels were active on average per frame
-        static long frames = 0;
 
-        static AbsoluteTime start = {0,0};
-        AbsoluteTime currTime = UpTime ();
-        static int num_channels = 0;
-
-        num_channels += OPENAL_GetChannelsPlaying();
-        double deltaTime = (float) AbsoluteDeltaToDuration (currTime, start);
-
-        if (0 > deltaTime)  // if negative microseconds
-            deltaTime /= -1000000.0;
-        else                // else milliseconds
-            deltaTime /= 1000.0;
-
-        ++frames;
-
-        if (deltaTime >= 1)
-        {
-            start = currTime;
-            float avg_channels = (float)num_channels / (float)frames;
-
-            ofstream opstream("log.txt",ios::app);
-            opstream << "Average frame count: ";
-            opstream << frames;
-            opstream << " frames - ";
-            opstream << avg_channels;
-            opstream << " per frame.\n";
-            opstream.close();
-
-            frames = 0;
-            num_channels = 0;
-        }
-    */
     if (stereomode == stereoNone) {
         DrawGLScene(stereoCenter);
     } else {
@@ -479,10 +473,7 @@ void CleanUp(void)
 
 // --------------------------------------------------------------------------
 
-static bool IsFocused()
-{
-    return ((SDL_GetWindowFlags(sdlwindow) & SDL_WINDOW_INPUT_FOCUS) != 0);
-}
+
 
 #ifndef WIN32
 // (code lifted from physfs: http://icculus.org/physfs/ ... zlib license.)
@@ -674,44 +665,29 @@ int main(int argc, char** argv)
             }
 
             bool gameDone = false;
-            bool gameFocused = true;
 
             while (!gameDone && !tryquit) {
-                if (IsFocused()) {
-                    gameFocused = true;
+                // check windows messages
 
-                    // check windows messages
-
-                    deltah = 0;
-                    deltav = 0;
-                    SDL_Event e;
-                    if (!waiting) {
-                        // message pump
-                        while (SDL_PollEvent(&e)) {
-                            if (!sdlEventProc(e)) {
-                                gameDone = true;
-                                break;
-                            }
+                deltah = 0;
+                deltav = 0;
+                SDL_Event e;
+                if (!waiting) {
+                    // message pump
+                    while (SDL_PollEvent(&e)) {
+                        if (!sdlEventProc(e)) {
+                            gameDone = true;
+                            break;
                         }
                     }
-
-                    // game
-                    DoUpdate();
-                } else {
-                    if (gameFocused) {
-                        // allow game chance to pause
-                        gameFocused = false;
-                        DoUpdate();
-                    }
-
-                    // game is not in focus, give CPU time to other apps by waiting for messages instead of 'peeking'
-                    SDL_WaitEvent(0);
                 }
+
+                // game
+                DoUpdate();
             }
 
             deleteGame();
         }
-
         CleanUp();
 
         return 0;

@@ -77,7 +77,7 @@ message(STATUS "CMake build type: ${CMAKE_BUILD_TYPE}")
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-parentheses -pedantic --std=gnu++11 ${CMAKE_CXX_FLAGS}")
 
 if(APPLE)
-    set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE STRING "Build architectures for OSX")
+    set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for OSX")
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING
         "Minimum OS X version to target for deployment (at runtime); newer APIs weak linked. Set to empty string for default value")
     set(CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.11.sdk" CACHE PATH
@@ -320,7 +320,8 @@ if(LINUX)
 endif(LINUX)
 
 if(APPLE)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/lugaru DESTINATION ${LUGARU_BINDIR})
+    # Assuming your binary is named 'lugaru', modify it if your binary name is different
+    install(TARGETS lugaru DESTINATION ${LUGARU_BINDIR})
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data DESTINATION ${LUGARU_APP_ROOT})
     install(FILES ${CMAKE_SOURCE_DIR}/Dist/OSX/Lugaru.icns DESTINATION ${LUGARU_RESDIR})
     install(FILES ${CMAKE_SOURCE_DIR}/Dist/OSX/Info.plist DESTINATION ${LUGARU_APP_ROOT}/Contents)

@@ -57,7 +57,7 @@ Last test for this was complied with an M2 Mac Mini Running macOS 14.0
 
 Compiling for macOS will require some additional dependencies.
 
-- xcode command line tool
+- xcode command line tools
 - jsoncpp
 - libvorbis
 
