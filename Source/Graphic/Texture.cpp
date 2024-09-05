@@ -22,6 +22,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Utils/Folders.hpp"
 #include "Utils/ImageIO.hpp"
+#include <filesystem>
 
 using namespace std;
 
@@ -30,13 +31,77 @@ extern bool trilinear;
 void TextureRes::load()
 {
     ImageRec texture;
+    std::string modTexturePath;
+    bool textureFound = false;
 
-    //load image into 'texture'
-    if (!load_image(filename.c_str(), texture)) {
-        cerr << "Texture " << filename << " loading failed" << endl;
+    // Correct malformed paths by removing redundant "Data/:"
+    size_t found = filename.find("Data/:");
+    if (found != std::string::npos) {
+        filename.erase(found, 6); // Remove the incorrect "Data/:"
+    }
+
+    // Extract just the filename (without any directory)
+    std::string textureFilename = std::filesystem::path(filename).filename().string();
+
+    // Check if the texture is available in any enabled mod's resource path
+    std::vector<std::string> enabledMods = Folders::getEnabledMods();
+    for (const std::string& modName : enabledMods) {
+        modTexturePath = Folders::getModResourcePath(modName, "Textures/" + textureFilename);
+
+        // Check for exact match first
+        if (Folders::file_exists(modTexturePath)) {
+            filename = modTexturePath;
+            textureFound = true;
+            break;
+        }
+
+        // If not found, perform case-insensitive search
+        std::string lowerModTexturePath = Folders::findFileCaseInsensitive(modTexturePath);
+        if (!lowerModTexturePath.empty()) {
+            filename = lowerModTexturePath;
+            textureFound = true;
+            break;
+        }
+    }
+
+    // If the texture is still not found, fallback to the main data folder
+    if (!textureFound) {
+        std::string dataTexturePath = Folders::getResourcePath("Textures/" + textureFilename);
+
+        // Check for exact match first
+        if (Folders::file_exists(dataTexturePath)) {
+            filename = dataTexturePath;
+            textureFound = true;
+        } else {
+            // If not found, perform case-insensitive search
+            std::string lowerFilename = Folders::findFileCaseInsensitive(dataTexturePath);
+            if (!lowerFilename.empty()) {
+                filename = lowerFilename;
+                textureFound = true;
+            }
+        }
+    }
+
+    size_t modStartPos = filename.find("/Mods/");
+    if (modStartPos != std::string::npos) {
+        std::string trimmedFilename = filename.substr(modStartPos + 6); // Skip over "/Mods/"
+        std::cout << "Loading Texture: " << trimmedFilename << std::endl;
+    } else {
+        std::cout << "Loading Texture: " << filename << std::endl;
+    }
+
+    if (!textureFound) {
+        std::cerr << "Texture " << filename << " loading failed" << std::endl;
         return;
     }
 
+    // Now, try loading the image
+    if (!load_image(filename.c_str(), texture)) {
+        std::cerr << "Texture " << filename << " loading failed during image loading" << std::endl;
+        return;
+    }
+
+    // Proceed with binding and setting up the texture as usual
     skinsize = texture.sizeX;
     GLuint type = GL_RGBA;
     if (texture.bpp == 24) {

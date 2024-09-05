@@ -1,92 +1,106 @@
-/*
-Copyright (C) 2003, 2010 - Wolfire Games
-Copyright (C) 2010-2017 - Lugaru contributors (see AUTHORS file)
+#ifndef _FOLDERS_HPP_
+#define _FOLDERS_HPP_
 
-This file is part of Lugaru.
+#include <string>
+#include <vector>
+#include <algorithm> // Needed for std::transform
+#include <cctype>    // Needed for ::tolower
+#include <exception>
 
-Lugaru is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+#ifndef DATA_DIR
+#define DATA_DIR "Data"
+#endif
 
-Lugaru is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+// Define a structure to hold mod information
+struct ModInfo {
+    std::string folderName;   // Folder name to identify the mod
+    std::string infoName;     // Display name of the mod
+    std::string description;  // Description of the mod
+    std::string version;      // Version of the mod
 
-You should have received a copy of the GNU General Public License
-along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
-*/
+    // Helper function to load from JSON file
+    static ModInfo fromJson(const std::string& jsonFilePath);
+};
 
-    #ifndef _FOLDERS_HPP_
-    #define _FOLDERS_HPP_
+struct FileNotFoundException : public std::exception
+{
+    std::string errorText;
 
-    #include <string>
-
-    #ifndef DATA_DIR
-    #define DATA_DIR "Data"
-    #endif
-
-    struct FileNotFoundException : public std::exception
+    FileNotFoundException(const std::string &filename)
+        : errorText(filename + " could not be found")
     {
-        std::string errorText;
+    }
 
-        FileNotFoundException(const std::string &filename)
-            : errorText(filename + " could not be found")
-        {
-        }
-
-        const char *what() const throw()
-        {
-            return errorText.c_str();
-        }
-    };
-
-    class Folders
+    const char *what() const throw()
     {
-        static const std::string dataDir;
+        return errorText.c_str();
+    }
+};
 
-    public:
-        /** Returns path to the screenshot directory. Creates it if needed. */
-        static std::string getScreenshotDir();
+class Folders
+{
+    static const std::string dataDir;
 
-        /** Returns full path for user data */
-        static std::string getUserDataPath();
+public:
+    /** Returns path to the screenshot directory. Creates it if needed. */
+    static std::string getScreenshotDir();
 
-        /** Returns full path for config file */
-        static std::string getConfigFilePath();
+    static void createAddonsJsonFile();
 
-        static std::string getModResourcePath(const std::string& modName, const std::string& resourceType);
+    /** Returns full path for user data */
+    static std::string getUserDataPath();
 
-        static int getNumMods();
+    /** Returns full path for config file */
+    static std::string getConfigFilePath();
+    static std::string getSoundResourcePath(const std::string& modName, const std::string& soundFileName);
+    /** Returns path for mod resource files */
+    static std::string getModResourcePath(const std::string& modName, const std::string& resourceType);
 
-        static std::vector<std::string> getEnabledMods();
+    /** Returns the number of installed mods */
+    static int getNumMods();
 
-        /** Creates the modlist.txt file in the Mods folder */
-        static std::string updateModListFile();
-        static std::string createModListFile();
+    /** Returns detailed information of enabled mods */
+    static std::vector<ModInfo> getEnabledModsWithInfo();
 
-        static FILE* openMandatoryFile(const std::string& filename, const char* mode);
+    static std::vector<std::string> getEnabledMods();
 
-        static bool file_exists(const std::string& filepath);
+    /** Creates the modlist.txt file in the Mods folder */
+    static std::string updateModListFile();
+    static std::string createModListFile();
 
-        /* Returns full path for a game resource */
-        static inline std::string getResourcePath(const std::string& filepath)
-        {
-            return dataDir + '/' + filepath;
-        }
+    static FILE* openMandatoryFile(const std::string& filename, const char* mode);
 
-        /** Returns full path for user progress save */
-        static inline std::string getUserSavePath()
-        {
-            return getUserDataPath() + "/users";
-        }
+    static bool file_exists(const std::string& filepath);
 
-        static bool makeDirectory(const std::string& path);
+    /* Returns full path for a game resource */
+    static inline std::string getResourcePath(const std::string& filepath)
+    {
+        return dataDir + '/' + filepath;
+    }
 
-    private:
-        static const char* getHomeDirectory();
-        static std::string getGenericDirectory(const char* ENVVAR, const std::string& fallback);
-    };
+    /** Returns full path for user progress save */
+    static inline std::string getUserSavePath()
+    {
+        return getUserDataPath() + "/users";
+    }
 
-    #endif /* _FOLDERS_H_ */
+    static bool makeDirectory(const std::string& path);
+
+    /** Finds a file case-insensitively within a directory */
+    static std::string findFileCaseInsensitive(const std::string& path);
+
+    static std::vector<ModInfo> availableMods;
+    static std::vector<ModInfo> enabledMods;
+    static std::vector<ModInfo> pendingAvailableMods;
+    static std::vector<ModInfo> pendingEnabledMods;
+
+
+private:
+    static const char* getHomeDirectory();
+    static std::string getGenericDirectory(const char* ENVVAR, const std::string& fallback);
+
+    /** Converts a string to lowercase */
+    static std::string toLower(const std::string& str);
+};
+
+#endif /* _FOLDERS_H_ */

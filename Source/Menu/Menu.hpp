@@ -34,36 +34,41 @@ struct MenuItem
         IMAGEBUTTON,
         MAPMARKER,
         MAPLINE,
-        MAPLABEL
+        MAPLABEL,
+        LINERECT 
     } type;
+
     int id;
-    string text;
+    std::string text;
     Texture texture;
     int x, y, w, h;
     float r, g, b;
     float effectfade;
 
+    float rotation;  // Rotation value for the item
     float linestartsize;
     float lineendsize;
 
-    MenuItem(MenuItemType _type, int _id, const string& _text, Texture _texture,
+    // Constructor definition
+    MenuItem(MenuItemType _type, int _id, const std::string& _text, Texture _texture,
              int _x, int _y, int _w, int _h, float _r, float _g, float _b,
-             float _linestartsize = 1, float _lineendsize = 1);
+             float _rotation = 0.0f, float _linestartsize = 1, float _lineendsize = 1);
 };
 
 class Menu
 {
 public:
     static void clearMenu();
-    static void addLabel(int id, const string& text, int x, int y, float r = 1, float g = 0, float b = 0);
-    static void addButton(int id, const string& text, int x, int y, float r = 1, float g = 0, float b = 0);
+    static void addLabel(int id, const std::string& text, int x, int y, float r = 1, float g = 0, float b = 0);
+    static void addButton(int id, const std::string& text, int x, int y, float r = 1, float g = 0, float b = 0);
     static void addImage(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 1, float b = 1);
-    static void addButtonImage(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 1, float b = 1);
+    static void addButtonImage(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 1, float b = 1, float rotation = 0.0f);
     static void addMapLine(int x, int y, int w, int h, float startsize, float endsize, float r, float g, float b);
-    static void addMapMarker(int id, Texture texture, int x, int y, int w, int h, float r, float g, float b);
-    static void addMapLabel(int id, const string& text, int x, int y, float r = 1, float g = 0, float b = 0);
-    static void setText(int id, const string& text);
-    static void setText(int id, const string& text, int x, int y, int w, int h);
+    static void addLineRect(int id, int x, int y, int w, int h, float r, float g, float b);
+    static void addMapMarker(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 0, float b = 0);
+    static void addMapLabel(int id, const std::string& text, int x, int y, float r = 1, float g = 0, float b = 0);
+    static void setText(int id, const std::string& text);
+    static void setText(int id, const std::string& text, int x, int y, int w, int h);
     static int getSelected(int mousex, int mousey);
     static void drawItems();
 
@@ -73,14 +78,21 @@ public:
     static void updateStereoConfigMenu();
     static void updateControlsMenu();
     static void updateModsMenu();
+
+    // New methods for the mod menu
+    static void drawModMenu();
+    static void handleArrowButtonPress(int buttonId); // Updated method for handling arrow button presses
+    static void applyModChanges();
+    static void saveModOrder();
     static void setKeySelected();
     
-    static void toggleModStatus(int lineNumber);
-
+    static void setModActive(const std::string& mod, bool active);
+    
 private:
     static void handleFadeEffect();
-
     static std::vector<MenuItem> items;
+    static std::vector<std::string> wrapText(const std::string &text, int maxWidth);
+    static int getTextWidth(const std::string &text);
 };
 
 #endif

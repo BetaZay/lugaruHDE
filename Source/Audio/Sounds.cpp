@@ -21,6 +21,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Audio/openal_wrapper.hpp"
 #include "Utils/Folders.hpp"
+#include <filesystem>
 
 struct OPENAL_SAMPLE* samp[sounds_count];
 
@@ -55,25 +56,80 @@ static int snd_mode(int snd)
     }
 }
 
-void loadAllSounds()
-{
-    for (int i = 0; i < sounds_count; i++) {
-        std::string buf = std::string("Sounds/") + sound_data[i];
-        samp[i] = OPENAL_Sample_Load(OPENAL_FREE,
-                                     Folders::getResourcePath(buf).c_str(),
-                                     snd_mode(i),
-                                     0, 0);
+void loadAllSounds() {
+    std::vector<std::string> enabledMods = Folders::getEnabledMods(); // Get enabled mods
+    std::string tempFolderPath = "Data/Temp";  // Specify the temp folder path
+
+    // Create the temporary folder if it doesn't exist
+    if (!std::filesystem::exists(tempFolderPath)) {
+        std::filesystem::create_directory(tempFolderPath);
     }
-    footstepsound = footstepsn1;
-    footstepsound2 = footstepsn2;
-    footstepsound3 = footstepst1;
-    footstepsound4 = footstepst2;
-    // Huh?
-    // OPENAL_Sample_SetMode(samp[whooshsound], OPENAL_LOOP_NORMAL);
+    
+    for (int i = 0; i < sounds_count; i++) {
+        std::string soundFilename = sound_data[i];
+        std::string modSoundPath;
+        bool soundFound = false;
+
+        // Look through enabled mods first
+        for (const std::string& modName : enabledMods) {
+            modSoundPath = Folders::getSoundResourcePath(modName, soundFilename);
+
+            // Check for exact match
+            if (Folders::file_exists(modSoundPath)) {
+                soundFound = true;
+                break;  // Sound found in a mod, stop searching
+            }
+
+            // If not found, perform a case-insensitive search
+            std::string lowerModSoundPath = Folders::findFileCaseInsensitive(modSoundPath);
+            if (!lowerModSoundPath.empty()) {
+                soundFound = true;
+                modSoundPath = lowerModSoundPath;
+                break;  // Case-insensitive match found, stop searching
+            }
+        }
+
+        // If not found in mods, look in the main sound folder
+        if (!soundFound) {
+            modSoundPath = Folders::getResourcePath("Sounds/" + soundFilename);
+
+            // Check for exact match first
+            if (!Folders::file_exists(modSoundPath)) {
+                // If not found, perform a case-insensitive search
+                modSoundPath = Folders::findFileCaseInsensitive(modSoundPath);
+            }
+        }
+
+        // Copy the sound to the temporary folder
+        std::string tempSoundPath = tempFolderPath + "/" + soundFilename;
+        try {
+            std::filesystem::copy(modSoundPath, tempSoundPath, std::filesystem::copy_options::overwrite_existing);
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Failed to copy sound to temp folder: " << e.what() << std::endl;
+            continue; // Skip to the next sound if copying fails
+        }
+
+        // Load the sound from the temp folder
+        if (Folders::file_exists(tempSoundPath)) {
+            samp[i] = OPENAL_Sample_Load(OPENAL_FREE, tempSoundPath.c_str(), OPENAL_2D, 0, 0);
+
+            // Delete the sound file after loading
+            try {
+                std::filesystem::remove(tempSoundPath);
+            } catch (const std::filesystem::filesystem_error& e) {
+                std::cerr << "Failed to delete temp sound file: " << e.what() << std::endl;
+            }
+        } else {
+            std::cerr << "Failed to load sound from temp folder: " << tempSoundPath << std::endl;
+        }
+    }
+
+    // Loop to set the stream mode, outside of sound-loading loop
     for (int i = stream_firesound; i <= stream_menutheme; i++) {
         OPENAL_Stream_SetMode(samp[i], OPENAL_LOOP_NORMAL);
     }
 }
+
 
 void addEnvSound(XYZ coords, float vol, float life)
 {

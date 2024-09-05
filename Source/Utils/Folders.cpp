@@ -1,25 +1,4 @@
-/*
-Copyright (C) 2003, 2010 - Wolfire Games
-Copyright (C) 2010-2017 - Lugaru contributors (see AUTHORS file)
-
-This file is part of Lugaru.
-
-Lugaru is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-Lugaru is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-su
-You should have received a copy of the GNU General Public License
-along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include "Folders.hpp"
-
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -32,6 +11,8 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include <dirent.h>
 #include <filesystem>
 #include <unordered_set>
+#include <algorithm> // Needed for std::sort
+#include <nlohmann/json.hpp> // Include JSON library
 
 #if PLATFORM_UNIX
 #include <pwd.h>
@@ -45,6 +26,25 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 const std::string Folders::dataDir = DATA_DIR;
+
+// Function to read ModInfo from JSON
+ModInfo ModInfo::fromJson(const std::string& jsonFilePath) {
+    ModInfo modInfo;
+    std::ifstream jsonFile(jsonFilePath);
+    if (!jsonFile.is_open()) {
+        std::cerr << "Unable to open " << jsonFilePath << std::endl;
+        return modInfo;
+    }
+
+    nlohmann::json jsonData;
+    jsonFile >> jsonData;
+    modInfo.infoName = jsonData.value("name", "Unknown Mod");
+    modInfo.description = jsonData.value("description", "No description available.");
+    modInfo.version = jsonData.value("version", "1.0");
+
+    return modInfo;
+}
+
 
 std::string Folders::getScreenshotDir()
 {
@@ -134,6 +134,38 @@ std::vector<std::string> Folders::getEnabledMods() {
     return enabledMods;
 }
 
+std::vector<ModInfo> Folders::getEnabledModsWithInfo() {
+    std::vector<ModInfo> enabledMods;
+    std::ifstream modListFile(getUserDataPath() + "/modlist.txt");
+    if (modListFile.is_open()) {
+        std::string line;
+        while (std::getline(modListFile, line)) {
+            size_t modStatusPos = line.find(":");
+            if (modStatusPos != std::string::npos) {
+                std::string modName = line.substr(0, modStatusPos);
+                int modStatus = std::stoi(line.substr(modStatusPos + 1));
+                if (modStatus == 1) {
+                    // Load mod info from the mod folder
+                    std::string modInfoPath = getModResourcePath(modName, "modinfo.json");
+                    if (std::filesystem::exists(modInfoPath)) {
+                        ModInfo modInfo = ModInfo::fromJson(modInfoPath);
+                        enabledMods.push_back(modInfo);
+                    } else {
+                        // If no modinfo.json, use modName as fallback
+                        ModInfo fallbackMod;
+                        fallbackMod.folderName = modName;
+                        enabledMods.push_back(fallbackMod);
+                    }
+                }
+            }
+        }
+        modListFile.close();
+    } else {
+        std::cerr << "Unable to open modlist.txt." << std::endl;
+    }
+    return enabledMods;
+}
+
 std::string Folders::getModResourcePath(const std::string& modName, const std::string& resourceType) {
     std::string modsFolderPath = getUserDataPath() + "/Mods/";
     std::string modPath = modsFolderPath + modName + "/" + resourceType;
@@ -177,7 +209,7 @@ std::string Folders::updateModListFile() {
     std::string modsFolderPath = getUserDataPath() + "/Mods";
     std::string modListFilePath = getUserDataPath() + "/modlist.txt";
 
-    std::unordered_set<std::string> installedMods;
+    std::unordered_map<std::string, int> installedMods;  // Track mod names and their statuses
     std::unordered_set<std::string> currentMods;
 
     // Read existing modlist data
@@ -189,7 +221,8 @@ std::string Folders::updateModListFile() {
                 std::size_t pos = line.find(":");
                 if (pos != std::string::npos) {
                     std::string modName = line.substr(0, pos);
-                    installedMods.insert(modName);
+                    int modStatus = std::stoi(line.substr(pos + 2));
+                    installedMods[modName] = modStatus;
                 }
             }
             inputFile.close();
@@ -206,28 +239,24 @@ std::string Folders::updateModListFile() {
         return "";
     }
 
+    // Iterate through current mods in Mods folder and keep their original status
     for (const auto &entry : std::filesystem::directory_iterator(modsFolderPath)) {
         if (entry.is_directory()) {
             std::string modName = entry.path().filename().string();
             currentMods.insert(modName);
-            if (installedMods.find(modName) == installedMods.end()) {
-                // Mod not found in the existing modlist, so write it with the default value
-                modListFile << modName << ": 0" << std::endl;
-            } else {
-                // Mod found in the existing modlist, so write it as is
-                modListFile << modName << ": 1" << std::endl;
-                installedMods.erase(modName); // Remove the mod from the installed set
-            }
+
+            // Keep original status if available, otherwise default to 0
+            int modStatus = (installedMods.find(modName) != installedMods.end()) ? installedMods[modName] : 0;
+            modListFile << modName << ": " << modStatus << std::endl;
+            
+            // Remove from installedMods to track remaining unused mods
+            installedMods.erase(modName);
         }
     }
 
-    // Write any remaining installed mods that are no longer present in the directory
+    // Write remaining mods that are no longer present in the directory (mark as available)
     for (const auto &mod : installedMods) {
-        if (currentMods.find(mod) == currentMods.end()) {
-            // Mod no longer exists in the Mods folder, so don't write it
-            continue;
-        }
-        modListFile << mod << ": 0" << std::endl;
+        modListFile << mod.first << ": 0" << std::endl;  // Default to 0 (available) for missing mods
     }
 
     modListFile.close();
@@ -240,6 +269,51 @@ std::string Folders::updateModListFile() {
         return "";
     }
 }
+
+std::string Folders::toLower(const std::string& str)
+{
+    std::string lowerStr = str;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+    return lowerStr;
+}
+
+std::string Folders::findFileCaseInsensitive(const std::string& path)
+{
+    std::filesystem::path p(path);
+    std::string directory = p.parent_path().string();
+    std::string requestedFilename = p.filename().string();
+
+    // Ensure the directory exists
+    if (!std::filesystem::exists(directory)) {
+        return "";
+    }
+
+    // First, check if the exact file exists
+    std::filesystem::path fullPath = std::filesystem::path(directory) / requestedFilename;
+    if (std::filesystem::exists(fullPath)) {
+        return fullPath.string();
+    }
+
+    // Perform a case-insensitive search only if the exact match was not found
+    std::string requestedFilenameLower = toLower(requestedFilename);
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        std::string currentFilename = entry.path().filename().string();
+
+        if (toLower(currentFilename) == requestedFilenameLower) {
+            return entry.path().string();  // Return the correct path
+        }
+    }
+
+    // Return an empty string if the file wasn't found
+    return "";
+}
+
+std::string Folders::getSoundResourcePath(const std::string& modName, const std::string& soundFileName) {
+    std::string modsFolderPath = getUserDataPath() + "/Mods/";
+    std::string modSoundPath = modsFolderPath + modName + "/Sounds/" + soundFileName;
+    return modSoundPath;
+}
+
 
 #if PLATFORM_LINUX
 /* Generic code for XDG ENVVAR test and fallback */

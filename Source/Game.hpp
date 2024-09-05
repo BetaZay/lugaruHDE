@@ -56,7 +56,7 @@ extern Texture Mapcircletexture;
 extern Texture cursortexture;
 extern GLuint screentexture;
 extern GLuint screentexture2;
-extern Texture Mainmenuitems[10];
+extern Texture Mainmenuitems[11];
 
 extern int selected;
 extern int keyselect;
@@ -146,6 +146,7 @@ void playdialoguescenesound();
 int findClosestPlayer();
 bool LoadLevel(int which);
 bool LoadLevel(const std::string& name, bool tutorial = false);
+void reloadGameAssets();
 
 void RestartLevel();
 

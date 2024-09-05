@@ -452,6 +452,8 @@ void Game::InitGame()
 
     Account::loadFile(Folders::getUserSavePath());
 
+    Folders::createModListFile();
+
     whichjointstartarray[0] = righthip;
     whichjointendarray[0] = rightfoot;
 
@@ -584,6 +586,7 @@ void Game::InitGame()
     Mainmenuitems[6].load("Textures/EndGame.png", 0);
     Mainmenuitems[8].load("Textures/Mods.png", 0);
     Mainmenuitems[9].load("Textures/Restart.png", 0);
+    Mainmenuitems[10].load("Textures/MapArrow.png", 0);
 
     texdetail = temptexdetail;
 
@@ -604,8 +607,6 @@ void Game::InitGame()
     Animation::loadAll();
 
     PersonType::Load();
-
-    Folders::createModListFile();
 }
 
 void Game::LoadScreenTexture()
@@ -624,6 +625,76 @@ void Game::LoadScreenTexture()
 
     glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, kTextureSize, kTextureSize, 0);
 }
+
+void Game::reloadGameAssets()
+{
+    float temptexdetail;
+    float viewdistdetail;
+    float megascale = 1;
+
+    temptexdetail = texdetail;
+    if (texdetail > 2) {
+        texdetail = 2;
+    }
+
+    LOG("Reloading game assets...");
+
+    // Stop all sounds before reloading
+    OPENAL_StopSound(OPENAL_ALL);
+
+    // Unload existing textures
+    glDeleteTextures(1, &screentexture);
+    glDeleteTextures(1, &screentexture2);
+
+    //Rebuild Font
+    temptexdetail = texdetail;
+    texdetail = 1;
+    text->LoadFontTexture("Textures/Font.png");
+    text->BuildFont();
+    textmono->LoadFontTexture("Textures/FontMono.png");
+    textmono->BuildFont();
+    texdetail = temptexdetail;
+
+    // Reloading textures and other assets
+    Weapon::Load();
+    terrain.shadowtexture.load("Textures/Shadow.png", 0);
+    terrain.bloodtexture.load("Textures/Blood.png", 0);
+    terrain.footprinttexture.load("Textures/Footprint.png", 0);
+    hawktexture.load("Textures/Hawk.png", 0);
+    Sprite::cloudtexture.load("Textures/Cloud.png", 1);
+    cursortexture.load("Textures/Cursor.png", 0);
+
+    Mapcircletexture.load("Textures/MapCircle.png", 0);
+    Mapboxtexture.load("Textures/MapBox.png", 0);
+    Maparrowtexture.load("Textures/MapArrow.png", 0);
+
+    Mainmenuitems[0].load("Textures/Lugaru.png", 0);
+    Mainmenuitems[1].load("Textures/NewGame.png", 0);
+    Mainmenuitems[2].load("Textures/Options.png", 0);
+    Mainmenuitems[3].load("Textures/Quit.png", 0);
+    Mainmenuitems[4].load("Textures/Eyelid.png", 0);
+    Mainmenuitems[5].load("Textures/Resume.png", 0);
+    Mainmenuitems[6].load("Textures/EndGame.png", 0);
+    Mainmenuitems[8].load("Textures/Mods.png", 0);
+    Mainmenuitems[9].load("Textures/Restart.png", 0);
+    Mainmenuitems[10].load("Textures/MapArrow.png", 0);
+
+
+    LOG("Initializing sound system...");
+
+    OPENAL_Init(44100, 32, 0);
+
+    OPENAL_SetSFXMasterVolume((int)(volume * 255));
+    loadAllSounds();
+
+    if (musictoggle) {
+        emit_stream_np(stream_menutheme);
+    }
+
+    // Optionally handle additional asset reloading related to mods or other dynamic content
+    LOG("Game assets reloaded successfully.");
+}
+
 
 //TODO: move LoadStuff() closer to GameTick.cpp to get rid of various vars shared in Game.hpp
 /* Loads models and textures which only needs to be loaded once */

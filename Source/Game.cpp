@@ -44,7 +44,7 @@ Texture Mapcircletexture;
 Texture cursortexture;
 GLuint screentexture = 0;
 GLuint screentexture2 = 0;
-Texture Mainmenuitems[10];
+Texture Mainmenuitems[11];
 
 int selected = 0;
 int keyselect = 0;

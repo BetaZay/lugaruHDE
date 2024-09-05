@@ -27,6 +27,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 #include <png.h>
 #include <stdio.h>
 #include <zlib.h>
+#include <filesystem>
 
 /* These two are needed for screenshot */
 extern int kContextWidth;
@@ -55,16 +56,50 @@ bool load_image(const char* file_name, ImageRec& tex)
         return false;
     }
 
-    const char* ptr = strrchr((char*)file_name, '.');
-    if (ptr) {
-        if (strcasecmp(ptr + 1, "png") == 0) {
-            return load_png(file_name, tex);
-        } else if (strcasecmp(ptr + 1, "jpg") == 0) {
-            return load_jpg(file_name, tex);
+    // Convert file_name to a std::string for easier manipulation
+    std::string corrected_file_name(file_name);
+
+    // Only sanitize if the path contains ':'
+    if (corrected_file_name.find(':') != std::string::npos) {
+        // Find the first occurrence of "Textures:"
+        size_t textures_pos = corrected_file_name.find("Textures:");
+        if (textures_pos != std::string::npos) {
+            // Extract everything after "Textures:"
+            std::string extracted_path = corrected_file_name.substr(textures_pos + 9); // 9 to skip "Textures:"
+
+            // Rebuild the path
+            corrected_file_name = "Data/Textures/" + extracted_path;
         }
     }
 
-    std::cerr << "Unsupported image type" << std::endl;
+    // Check if the file exists case-sensitively first
+    if (!Folders::file_exists(corrected_file_name)) {
+        // Perform case-insensitive search
+        std::string directory = std::filesystem::path(corrected_file_name).parent_path().string();
+        std::string filename = std::filesystem::path(corrected_file_name).filename().string();
+
+        std::string found_file = Folders::findFileCaseInsensitive(directory + "/" + filename);
+
+        if (!found_file.empty()) {
+            corrected_file_name = found_file;
+            std::cerr << "Found file case-insensitively: " << corrected_file_name << std::endl;
+        } else {
+            std::cerr << "File not found after case-insensitive search: " << corrected_file_name << std::endl;
+            return false;
+        }
+    }
+
+    // Use the (possibly sanitized and found) file name for further processing
+    const char* ptr = strrchr(corrected_file_name.c_str(), '.');
+    if (ptr) {
+        if (strcasecmp(ptr + 1, "png") == 0) {
+            return load_png(corrected_file_name.c_str(), tex);
+        } else if (strcasecmp(ptr + 1, "jpg") == 0) {
+            return load_jpg(corrected_file_name.c_str(), tex);
+        }
+    }
+
+    std::cerr << "Unsupported image type for file: " << corrected_file_name << std::endl;
     return false;
 }
 

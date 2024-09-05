@@ -926,6 +926,10 @@ int Game::DrawGLScene(StereoSide side)
                 }
                 string = "Difficulty: " + to_string(difficulty);
                 text->glPrint(10, 240, string, 0, .8, 1024, 768);
+                string = "View distance: " + to_string(viewdistance);
+                text->glPrint(10, 210, string, 0, .8, 1024, 768);
+                string = "Fade: " + to_string(fadestart);
+                text->glPrint(10, 180, string, 0, .8, 1024, 768);
             }
         }
 
