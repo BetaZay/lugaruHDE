@@ -40,13 +40,14 @@ void TextureRes::load()
         filename.erase(found, 6); // Remove the incorrect "Data/:"
     }
 
-    // Extract just the filename (without any directory)
-    std::string textureFilename = std::filesystem::path(filename).filename().string();
+    // Extract the filename with its path relative to the Textures folder
+    size_t textureFolderPos = filename.find("Textures/");
+    std::string texturePath = filename.substr(textureFolderPos);  // Keep the path starting from "Textures/"
 
     // Check if the texture is available in any enabled mod's resource path
     std::vector<std::string> enabledMods = Folders::getEnabledMods();
     for (const std::string& modName : enabledMods) {
-        modTexturePath = Folders::getModResourcePath(modName, "Textures/" + textureFilename);
+        modTexturePath = Folders::getModResourcePath(modName, texturePath);
 
         // Check for exact match first
         if (Folders::file_exists(modTexturePath)) {
@@ -66,7 +67,7 @@ void TextureRes::load()
 
     // If the texture is still not found, fallback to the main data folder
     if (!textureFound) {
-        std::string dataTexturePath = Folders::getResourcePath("Textures/" + textureFilename);
+        std::string dataTexturePath = Folders::getResourcePath(texturePath);  // Use full relative path
 
         // Check for exact match first
         if (Folders::file_exists(dataTexturePath)) {
@@ -82,16 +83,8 @@ void TextureRes::load()
         }
     }
 
-    size_t modStartPos = filename.find("/Mods/");
-    if (modStartPos != std::string::npos) {
-        std::string trimmedFilename = filename.substr(modStartPos + 6); // Skip over "/Mods/"
-        std::cout << "Loading Texture: " << trimmedFilename << std::endl;
-    } else {
-        std::cout << "Loading Texture: " << filename << std::endl;
-    }
-
     if (!textureFound) {
-        std::cerr << "Texture " << filename << " loading failed" << std::endl;
+        std::cerr << "Texture " << filename << " not found" << std::endl;
         return;
     }
 
@@ -99,6 +92,8 @@ void TextureRes::load()
     if (!load_image(filename.c_str(), texture)) {
         std::cerr << "Texture " << filename << " loading failed during image loading" << std::endl;
         return;
+    } else {
+        std::cout << "Loading Texture: " << filename << std::endl;
     }
 
     // Proceed with binding and setting up the texture as usual
@@ -137,7 +132,14 @@ void TextureRes::load()
     } else {
         glTexImage2D(GL_TEXTURE_2D, 0, type, texture.sizeX, texture.sizeY, 0, type, GL_UNSIGNED_BYTE, texture.data);
     }
+
+    // Check for OpenGL errors
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cerr << "OpenGL error during texture setup: " << err << std::endl;
+    }
 }
+
 
 void TextureRes::bind()
 {

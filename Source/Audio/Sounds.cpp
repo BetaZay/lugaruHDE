@@ -100,6 +100,14 @@ void loadAllSounds() {
             }
         }
 
+        size_t modStartPos = modSoundPath.find("/Mods/");
+        if (modStartPos != std::string::npos) {
+            std::string trimmedFilename = modSoundPath.substr(modStartPos + 6); // Skip over "/Mods/"
+            std::cout << "Loading Sound: " << trimmedFilename << std::endl;
+        } else {
+            std::cout << "Loading Sound: " << modSoundPath << std::endl;
+        }
+
         // Copy the sound to the temporary folder
         std::string tempSoundPath = tempFolderPath + "/" + soundFilename;
         try {
@@ -111,7 +119,7 @@ void loadAllSounds() {
 
         // Load the sound from the temp folder
         if (Folders::file_exists(tempSoundPath)) {
-            samp[i] = OPENAL_Sample_Load(OPENAL_FREE, tempSoundPath.c_str(), OPENAL_2D, 0, 0);
+            samp[i] = OPENAL_Sample_Load(OPENAL_FREE, tempSoundPath.c_str(), snd_mode(1), 0, 0);
 
             // Delete the sound file after loading
             try {
