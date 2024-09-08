@@ -28,11 +28,9 @@ using namespace std;
 
 extern bool trilinear;
 
-void TextureRes::load()
-{
+void TextureRes::load() {
     ImageRec texture;
-    std::string modTexturePath;
-    bool textureFound = false;
+    std::string resourceTexturePath;
 
     // Correct malformed paths by removing redundant "Data/:"
     size_t found = filename.find("Data/:");
@@ -40,67 +38,40 @@ void TextureRes::load()
         filename.erase(found, 6); // Remove the incorrect "Data/:"
     }
 
-    // Extract the filename with its path relative to the Textures folder
-    size_t textureFolderPos = filename.find("Textures/");
-    std::string texturePath = filename.substr(textureFolderPos);  // Keep the path starting from "Textures/"
+    // Pass the cleaned-up path directly to getResourcePath for mod or base game search
+    resourceTexturePath = Folders::getResourcePath(filename);
 
-    // Check if the texture is available in any enabled mod's resource path
-    std::vector<std::string> enabledMods = Folders::getEnabledMods();
-    for (const std::string& modName : enabledMods) {
-        modTexturePath = Folders::getModResourcePath(modName, texturePath);
-
-        // Check for exact match first
-        if (Folders::file_exists(modTexturePath)) {
-            filename = modTexturePath;
-            textureFound = true;
-            break;
-        }
-
-        // If not found, perform case-insensitive search
-        std::string lowerModTexturePath = Folders::findFileCaseInsensitive(modTexturePath);
-        if (!lowerModTexturePath.empty()) {
-            filename = lowerModTexturePath;
-            textureFound = true;
-            break;
-        }
-    }
-
-    // If the texture is still not found, fallback to the main data folder
-    if (!textureFound) {
-        std::string dataTexturePath = Folders::getResourcePath(texturePath);  // Use full relative path
-
-        // Check for exact match first
-        if (Folders::file_exists(dataTexturePath)) {
-            filename = dataTexturePath;
-            textureFound = true;
-        } else {
-            // If not found, perform case-insensitive search
-            std::string lowerFilename = Folders::findFileCaseInsensitive(dataTexturePath);
-            if (!lowerFilename.empty()) {
-                filename = lowerFilename;
-                textureFound = true;
-            }
-        }
-    }
-
-    if (!textureFound) {
-        std::cerr << "Texture " << filename << " not found" << std::endl;
+    // Check if the file was found
+    if (resourceTexturePath.empty()) {
+        std::cerr << "Texture file not found: " << filename << std::endl;
         return;
     }
+
+    // Update the filename to the resolved resource path
+    filename = resourceTexturePath;
+    std::cout << "Loading Texture: " << filename << std::endl;
+
+    // Clear any previous OpenGL errors
+    while (glGetError() != GL_NO_ERROR);
 
     // Now, try loading the image
     if (!load_image(filename.c_str(), texture)) {
         std::cerr << "Texture " << filename << " loading failed during image loading" << std::endl;
         return;
-    } else {
-        std::cout << "Loading Texture: " << filename << std::endl;
     }
 
     // Proceed with binding and setting up the texture as usual
     skinsize = texture.sizeX;
     GLuint type = GL_RGBA;
+
+    // Handle different texture bit depths
     if (texture.bpp == 24) {
         type = GL_RGB;
+    } else if (texture.bpp == 32) {
+        type = GL_RGBA;
+    } else {
+        std::cerr << "Unsupported texture format: " << texture.bpp << " bits per pixel" << std::endl;
+        return;
     }
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -111,6 +82,7 @@ void TextureRes::load()
 
     glBindTexture(GL_TEXTURE_2D, id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     if (hasMipmap) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (trilinear ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST));
         glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
@@ -118,6 +90,7 @@ void TextureRes::load()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     }
 
+    // Set texture data for skin or standard texture
     if (isSkin) {
         free(data);
         const int nb = texture.sizeY * texture.sizeX * (texture.bpp / 8);
@@ -139,7 +112,6 @@ void TextureRes::load()
         std::cerr << "OpenGL error during texture setup: " << err << std::endl;
     }
 }
-
 
 void TextureRes::bind()
 {

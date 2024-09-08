@@ -1,0 +1,31 @@
+{
+    "Packs": {
+        "Mods": [
+            {
+                "Description": "This is a small campaign I made with the Lugaru map editor. I finally finished this after wrestling invisible demons in the map editor. It has maybe 10 fighting levels, 7 dialogue levels, and one bonus fighting level. I had intended to add a mystery solving element to all the tasks, to make up for the short length, but cut much of it because of difficulties with the editor. The main character is similar to a hired assassin and so I set up clues for the player to figure out who hired him and why.",
+                "ModName": "SevenTasks",
+                "Status": "Enabled",
+                "Version": "1.0"
+            },
+            {
+                "Description": "The island of Lugaru is embroiled in civil war. Led by the freedom fighter Lucius, the rebels have been fighting a losing battle to throw off the Imperial yoke. And now it seems the Emperor has unleashed a new weapon upon the rebel forces...one which may lead to the destruction of all who inhabit the island...",
+                "ModName": "Empire",
+                "Status": "Enabled",
+                "Version": "1.0"
+            },
+            {
+                "Description": "Sven is Turner's twin brother (or maybe just a cousin, he was never very clear on this). He's been training in the desert (see my previous map pack) to become the new master of his Temple. He has just come back. The story starts right in the heat of things, and what's happening is only implied by the dialogues, not flat out explained. But you'll figure out very quickly. The scenario is really simple and just a frame for the levels. Last thing, don't be too upset if there are small glitches. The level editor is unsupported and reliably crashes when you stare at it the wrong way.",
+                "ModName": "Temple",
+                "Status": "Enabled",
+                "Version": "1.0"
+            },
+            {
+                "Description": "The Rabbit's Foot",
+                "ModName": "Lugaru",
+                "Status": "Enabled",
+                "Version": "1.2.2"
+            }
+        ],
+        "TexturePacks": []
+    }
+}

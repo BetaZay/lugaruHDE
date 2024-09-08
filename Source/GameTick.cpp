@@ -485,6 +485,7 @@ bool Game::LoadLevel(int which)
     } else if (which >= 0 && which <= 15) {
         char buf[32];
         snprintf(buf, 32, "map%d", which + 1); // challenges
+        std::cerr << "loading " << buf << std::endl;
         return LoadLevel(buf);
     } else {
         return LoadLevel("mapsave");
@@ -494,19 +495,11 @@ bool Game::LoadLevel(int which)
 bool Game::LoadLevel(const std::string& name, bool tutorial)
 {
     std::string level_path = Folders::getResourcePath("Maps/" + name);
+
+    // Check if the level file exists, if not print an error
     if (!Folders::file_exists(level_path)) {
-        std::vector<std::string> enabledMods = Folders::getEnabledMods();
-        for (const auto& mod : enabledMods) {
-            std::string modPath = Folders::getModResourcePath(mod, "Maps/" + name);
-            if (Folders::file_exists(modPath)) {
-                level_path = modPath;
-                break;
-            }
-        }
-        if (!Folders::file_exists(level_path)) {
-            perror(std::string("LoadLevel: Could not open file '" + level_path).c_str());
-            return false;
-        }
+        std::cerr << "LoadLevel: Could not open file '" << level_path << "'\n";
+        return false;
     }
 
     int indemo; // FIXME this should be removed
@@ -515,7 +508,7 @@ bool Game::LoadLevel(const std::string& name, bool tutorial)
 
     LOGFUNC;
 
-    LOG(std::string("Loading level...") + name);
+    LOG(std::string("Loading level... ") + name);
 
     if (!gameon) {
         visibleloading = true;

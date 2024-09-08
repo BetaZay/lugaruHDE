@@ -32,47 +32,41 @@ bool campaign = false;
 int actuallevel = 0;
 std::string campaignEndText[3];
 
-std::vector<std::string> ListCampaigns()
-{
+std::vector<std::string> ListCampaigns() {
     std::vector<std::string> campaignNames;
 
-    // Load campaigns from the Data folder and enabled mods
-    std::string dataPath = Folders::getResourcePath("/Campaigns");
-    if (!dataPath.empty()) {
-        DIR* campaignsDir = opendir(dataPath.c_str());
-        struct dirent* campaign = NULL;
-        if (campaignsDir) {
-            while ((campaign = readdir(campaignsDir)) != NULL) {
-                std::string name(campaign->d_name);
-                if (name.length() < 5) {
-                    continue;
-                }
-                if (!name.compare(name.length() - 4, 4, ".txt")) {
-                    campaignNames.push_back(name.substr(0, name.length() - 4));
-                }
-            }
-            closedir(campaignsDir);
-        }
+    // Check for base game campaigns (Lugaru)
+    std::string lugaruCampaignPath = Folders::getResourcePath("Lugaru/Campaign.json");
+    if (Folders::file_exists(lugaruCampaignPath)) {
+        campaignNames.push_back("Lugaru");
+        std::cerr << "Found base game campaign: Lugaru" << std::endl;
     }
 
-    // Load campaigns from enabled mods
-    std::vector<std::string> enabledMods = Folders::getEnabledMods();
-    for (const auto& mod : enabledMods) {
-        std::string modPath = Folders::getModResourcePath(mod, "/Campaigns");
-        if (!modPath.empty()) {
-            DIR* modCampaignsDir = opendir(modPath.c_str());
-            struct dirent* modCampaign = NULL;
-            if (modCampaignsDir) {
-                while ((modCampaign = readdir(modCampaignsDir)) != NULL) {
-                    std::string name(modCampaign->d_name);
-                    if (name.length() < 5) {
-                        continue;
-                    }
-                    if (!name.compare(name.length() - 4, 4, ".txt")) {
-                        campaignNames.push_back(name.substr(0, name.length() - 4));
-                    }
-                }
-                closedir(modCampaignsDir);
+    // Now check for campaigns in mod packs by searching for PackName/Campaign.json
+    std::string packListPath = Folders::getResourcePath("PackList.json");
+    if (!Folders::file_exists(packListPath)) {
+        std::cerr << "PackList.json not found!" << std::endl;
+        return campaignNames;
+    }
+
+    // Open and read PackList.json to get enabled mods
+    std::ifstream packListFile(packListPath);
+    nlohmann::json packListJson;
+    packListFile >> packListJson;
+    packListFile.close();
+
+    const auto& mods = packListJson["Packs"]["Mods"];
+
+    // Iterate through each enabled mod and check if a Campaign.json file exists
+    for (const auto& mod : mods) {
+        if (mod["Status"] == "Enabled") {
+            std::string modName = mod["ModName"];
+            std::string modCampaignPath = Folders::getResourcePath(modName + "/Campaign.json");
+
+            if (Folders::file_exists(modCampaignPath)) {
+                // Found a campaign in this mod, add its name
+                campaignNames.push_back(modName);
+                std::cerr << "Found campaign in mod: " << modName << std::endl;
             }
         }
     }
@@ -80,73 +74,106 @@ std::vector<std::string> ListCampaigns()
     return campaignNames;
 }
 
-void LoadCampaign()
-{
+void LoadCampaign() {
     if (!Account::hasActive()) {
+        std::cerr << "No active account found!" << std::endl;
         return;
     }
-    std::string campaignPath = Folders::getResourcePath("/Campaigns/" + Account::active().getCurrentCampaign() + ".txt");
+
+    std::string campaignPath = Folders::getResourcePath(Account::active().getCurrentCampaign() + "/Campaign.json");
     bool found = false;
 
-    // Check the main Data folder first
-    std::ifstream ipstream(campaignPath);
-    if (ipstream.good()) {
+    // Try loading the campaign from the current pack
+    std::ifstream campaignFile(campaignPath);
+    if (campaignFile.good()) {
         found = true;
-        ipstream.close();
-    } else {
-        // Look for the campaign in enabled mods
-        for (const auto &mod : Folders::getEnabledMods()) {
-            std::string modCampaignPath = Folders::getModResourcePath(mod, "/Campaigns/" + Account::active().getCurrentCampaign() + ".txt");
-            std::ifstream modStream(modCampaignPath);
-            if (modStream.good()) {
-                campaignPath = modCampaignPath;
-                found = true;
-                modStream.close();
-                break;
-            }
-            modStream.close();
-        }
+        std::cerr << "Loaded campaign from: " << campaignPath << std::endl;
     }
 
     if (!found) {
-        if (Account::active().getCurrentCampaign() == "lugaru") {
-            std::cerr << "Could not find main campaign!" << std::endl;
-            return;
-        }
-        std::cerr << "Could not find campaign \"" << Account::active().getCurrentCampaign() << "\", falling back to main." << std::endl;
-        Account::active().setCurrentCampaign("lugaru");
-        LoadCampaign();
+        std::cerr << "Could not find campaign \"" << Account::active().getCurrentCampaign() << "\", falling back to base game." << std::endl;
+        Account::active().setCurrentCampaign("Lugaru");
+        LoadCampaign();  // Recursive call to load the base campaign
         return;
     }
 
-    ipstream.open(campaignPath);
-    ipstream.ignore(256, ':');
-    int numlevels;
-    ipstream >> numlevels;
+    // Parse campaign data if the file is found
+    nlohmann::json campaignData;
+    try {
+        campaignFile >> campaignData;
+        campaignFile.close();
+    } catch (std::exception& e) {
+        std::cerr << "Error parsing campaign JSON: " << e.what() << std::endl;
+        return;
+    }
+
+    if (!campaignData.contains("CampaignLevels") || !campaignData.contains("Levels")) {
+        std::cerr << "Invalid campaign JSON structure!" << std::endl;
+        return;
+    }
+
+    int numLevels = campaignData["CampaignLevels"];
     campaignlevels.clear();
-    for (int i = 0; i < numlevels; i++) {
+
+    // Loop through each level in the campaign
+    for (const auto& levelData : campaignData["Levels"]) {
         CampaignLevel cl;
-        ipstream >> cl;
+
+        if (!levelData.contains("Name") || !levelData.contains("Description")) {
+            std::cerr << "Level data missing mandatory fields!" << std::endl;
+            continue;
+        }
+
+        cl.mapname = levelData["Name"];
+        cl.description = levelData["Description"];
+        std::replace(cl.description.begin(), cl.description.end(), '_', ' ');
+
+        // Handle optional fields
+        cl.choosenext = levelData.value("ChooseNext", 0);  // Default to 0 if not present
+        cl.location.x = levelData.value("LocationX", 0);  // Default to (0,0) if not present
+        cl.location.y = levelData.value("LocationY", 0);
+
+        // Ensure next levels are read properly
+        int numNext = levelData.value("NumNext", 0);
+        if (numNext > 0 && levelData.contains("NextLevel")) {
+            if (levelData["NextLevel"].is_array()) {
+                for (int i = 0; i < numNext; i++) {
+                    cl.nextlevel.push_back(levelData["NextLevel"][i].get<int>() - 1);  // Convert to int and subtract 1
+                }
+            } else {
+                cl.nextlevel.push_back(levelData["NextLevel"].get<int>() - 1);  // Convert to int and subtract 1
+            }
+        }
+
         campaignlevels.push_back(cl);
     }
-    campaignEndText[0] = "Congratulations!";
-    campaignEndText[1] = "You have completed " + Account::active().getCurrentCampaign() + " campaign";
-    campaignEndText[2] = "and restored peace to the island of Lugaru.";
-    if (ipstream.good()) {
-        ipstream.ignore(256, ':');
-        getline(ipstream, campaignEndText[0]);
-        getline(ipstream, campaignEndText[1]);
-        getline(ipstream, campaignEndText[2]);
-    }
-    ipstream.close();
 
-    std::ifstream test(Folders::getResourcePath("/Textures/" + Account::active().getCurrentCampaign() + "/World.png"));
-    if (test.good()) {
-        Mainmenuitems[7].load("Textures/" + Account::active().getCurrentCampaign() + "/World.png", 0);
-    } else {
-        Mainmenuitems[7].load("Textures/World.png", 0);
+    // Set end text if available
+    if (campaignData.contains("EndText")) {
+        campaignEndText[0] = "Congratulations!";
+        campaignEndText[1] = campaignData["EndText"];
+        campaignEndText[2] = "";
     }
 
+    // Load World.png texture with fallback logic
+    std::string worldTexturePath = Folders::getResourcePath(Account::active().getCurrentCampaign() + "/Textures/World.png");
+
+    if (worldTexturePath.empty()) {
+        std::cerr << "World.png not found in the current campaign, trying fallback." << std::endl;
+        worldTexturePath = Folders::getResourcePath("Lugaru/Textures/World.png");
+
+        if (worldTexturePath.empty()) {
+            std::cerr << "Fallback to base game World.png failed!" << std::endl;
+        } else {
+            std::cerr << "Loaded fallback World.png from base game." << std::endl;
+        }
+    }
+
+    if (!worldTexturePath.empty()) {
+        Mainmenuitems[7].load(worldTexturePath, 0);
+    }
+
+    // Reset campaign progress if no choices were made yet
     if (Account::active().getCampaignChoicesMade() == 0) {
         Account::active().setCampaignScore(0);
         Account::active().resetFasttime();

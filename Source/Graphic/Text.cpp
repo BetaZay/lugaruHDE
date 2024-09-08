@@ -26,7 +26,7 @@ void Text::LoadFontTexture(const std::string& fileName)
 {
     LOGFUNC;
 
-    LOG(std::string("Loading font texture...") + fileName);
+    LOG(std::string("Loading font texture... ") + fileName);
 
     FontTexture.load(fileName, false);
     if (base) {

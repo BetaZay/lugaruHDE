@@ -1,0 +1,7 @@
+{
+  "Name": "SevenTasks",
+  "Description": "This is a small campaign I made with the Lugaru map editor. I finally finished this after wrestling invisible demons in the map editor. It has maybe 10 fighting levels, 7 dialogue levels, and one bonus fighting level. I had intended to add a mystery solving element to all the tasks, to make up for the short length, but cut much of it because of difficulties with the editor. The main character is similar to a hired assassin and so I set up clues for the player to figure out who hired him and why.",
+  "Version": "1.0",
+  "Author" : "skraeling",
+  "PackType": "Mod"
+}

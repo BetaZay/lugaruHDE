@@ -45,7 +45,7 @@ Account::Account(const string& name)
     memset(fasttime, 0, sizeof(fasttime));
     memset(unlocked, 0, sizeof(unlocked));
 
-    setCurrentCampaign("lugaru");
+    setCurrentCampaign("Lugaru");
 }
 
 Account::Account(FILE* tfile)
@@ -219,15 +219,13 @@ void Account::endGame()
     campaignProgress[currentCampaign].time = 0;
 }
 
-void Account::winCampaignLevel(int choice, int score, float time)
-{
+void Account::winCampaignLevel(int choice, int score, float time) {
     campaignProgress[currentCampaign].choices.push_back(choice);
     setCampaignScore(campaignProgress[currentCampaign].score + score);
     campaignProgress[currentCampaign].time = time;
 }
 
-void Account::winLevel(int level, int score, float time)
-{
+void Account::winLevel(int level, int score, float time) {
     if (!devtools) {
         if (score > highscore[level]) {
             highscore[level] = score;

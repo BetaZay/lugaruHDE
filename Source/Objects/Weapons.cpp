@@ -100,7 +100,7 @@ void Weapon::setType(int t)
 /* Load weapons models and textures */
 void Weapon::Load()
 {
-    LOG("Loading weapon data...");
+    LOG("Loading weapon data... ");
 
     knifetextureptr.load("Textures/Knife.png", 0);
     bloodknifetextureptr.load("Textures/BloodKnife.png", 0);

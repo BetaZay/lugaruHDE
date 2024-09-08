@@ -38,6 +38,7 @@ extern int leveltheme;
 extern void toggleFullscreen();
 
 int entername = 0;
+int selectedModIndex = -1;
 std::string newusername = "";
 unsigned newuserselected = 0;
 float newuserblinkdelay = 0;
@@ -248,6 +249,10 @@ void Menu::addLineRect(int id, int x, int y, int w, int h, float r, float g, flo
     items.emplace_back(MenuItem::LINERECT, id, "", Texture(), x, y, w, h, r, g, b);
 }
 
+void Menu::addRectButton(int id, int x, int y, int w, int h, float r = 1, float g = 1, float b = 1) {
+    items.emplace_back(MenuItem::RECTBUTTON, id, "", Texture(), x, y, w, h, r, g, b);
+}
+
 void Menu::setText(int id, const std::string& text)
 {
     for (auto& item : items) {
@@ -277,16 +282,12 @@ void Menu::setText(int id, const std::string& text, int x, int y, int w, int h)
     }
 }
 
-int Menu::getSelected(int mousex, int mousey)
-{
+int Menu::getSelected(int mousex, int mousey) {
     for (auto it = items.rbegin(); it != items.rend(); ++it) {
-        if (it->type == MenuItem::BUTTON || it->type == MenuItem::IMAGEBUTTON || it->type == MenuItem::MAPMARKER) {
+        if (it->type == MenuItem::BUTTON || it->type == MenuItem::IMAGEBUTTON || it->type == MenuItem::MAPMARKER || it->type == MenuItem::RECTBUTTON) {
             int mx = mousex;
             int my = mousey;
-            if (it->type == MenuItem::MAPMARKER) {
-                mx -= 1;
-                my += 2;
-            }
+
             if (mx >= it->x && mx < it->x + it->w && my >= it->y && my < it->y + it->h) {
                 return it->id;
             }
@@ -325,54 +326,75 @@ void Menu::drawItems() {
             case MenuItem::IMAGE:
             case MenuItem::IMAGEBUTTON:
             case MenuItem::MAPMARKER:
-                glColor4f(it->r, it->g, it->b, 1);
+                if (it->id >= 1000 && it->id < 2000 && it->type == MenuItem::IMAGE) {  // Assuming 1000-2000 are for mod pack images
+                    // Set the color with full opacity (the alpha will come from the texture itself)
+                    glAlphaFunc(GL_GREATER, 0.2f);
+                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);  // Opaque RGB, respect alpha for transparency
 
-                // Set the blend function for MAPMARKER and others
-                if (it->type == MenuItem::MAPMARKER) {
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                    glTranslatef(2.5, -4.5, 0); // Old marker-specific translation
+                    // Set the color with full opacity (the alpha will come from the texture itself)
+                    glColor4f(it->r, it->g, it->b, 1);
+
+                    it->texture.bind();
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                    // Render the textured quad
+                    glBegin(GL_QUADS);
+                    glTexCoord2f(0, 0); glVertex3f(it->x, it->y, 0);
+                    glTexCoord2f(1, 0); glVertex3f(it->x + it->w, it->y, 0);
+                    glTexCoord2f(1, 1); glVertex3f(it->x + it->w, it->y + it->h, 0);
+                    glTexCoord2f(0, 1); glVertex3f(it->x, it->y + it->h, 0);
+                    glEnd();
                 } else {
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                }
-
-                // Apply rotation only for IMAGEBUTTON type
-                if (it->type == MenuItem::IMAGEBUTTON) {
-                    if (it->rotation != 0.0f) {
-                        // Calculate the center of the item
-                        float centerX = it->x + it->w / 2;
-                        float centerY = it->y + it->h / 2;
-
-                        // Apply the transformation
-                        glTranslatef(centerX, centerY, 0);
-                        glRotatef(it->rotation, 0.0f, 0.0f, 1.0f);
-                        glTranslatef(-centerX, -centerY, 0);
+                    glEnable(GL_BLEND);
+                    glColor4f(it->r, it->g, it->b, 1);
+                    // Set the blend function for MAPMARKER and others
+                    if (it->type == MenuItem::MAPMARKER) {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                        glTranslatef(2.5, -4.5, 0); // Old marker-specific translation
+                    } else {
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                     }
-                }
 
-                // Bind the texture
-                it->texture.bind();
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                    // Apply rotation only for IMAGEBUTTON type
+                    if (it->type == MenuItem::IMAGEBUTTON) {
+                        if (it->rotation != 0.0f) {
+                            // Calculate the center of the item
+                            float centerX = it->x + it->w / 2;
+                            float centerY = it->y + it->h / 2;
 
-                // Render the textured quad
-                glBegin(GL_QUADS);
-                glTexCoord2f(0, 0); glVertex3f(it->x, it->y, 0);
-                glTexCoord2f(1, 0); glVertex3f(it->x + it->w, it->y, 0);
-                glTexCoord2f(1, 1); glVertex3f(it->x + it->w, it->y + it->h, 0);
-                glTexCoord2f(0, 1); glVertex3f(it->x, it->y + it->h, 0);
-                glEnd();
+                            // Apply the transformation
+                            glTranslatef(centerX, centerY, 0);
+                            glRotatef(it->rotation, 0.0f, 0.0f, 1.0f);
+                            glTranslatef(-centerX, -centerY, 0);
+                        }
+                    }
 
-                if (it->type != MenuItem::IMAGE) {
-                    // Mouseover highlight effect
-                    for (int i = 0; i < 10; i++) {
-                        if (1 - ((float)i) / 10 - (1 - it->effectfade) > 0) {
-                            glColor4f(it->r, it->g, it->b, (1 - ((float)i) / 10 - (1 - it->effectfade)) * .25);
-                            glBegin(GL_QUADS);
-                            glTexCoord2f(0, 0); glVertex3f(it->x - ((float)i) * 1 / 2, it->y - ((float)i) * 1 / 2, 0);
-                            glTexCoord2f(1, 0); glVertex3f(it->x + it->w + ((float)i) * 1 / 2, it->y - ((float)i) * 1 / 2, 0);
-                            glTexCoord2f(1, 1); glVertex3f(it->x + it->w + ((float)i) * 1 / 2, it->y + it->h + ((float)i) * 1 / 2, 0);
-                            glTexCoord2f(0, 1); glVertex3f(it->x - ((float)i) * 1 / 2, it->y + it->h + ((float)i) * 1 / 2, 0);
-                            glEnd();
+                    // Bind the texture
+                    it->texture.bind();
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                    // Render the textured quad
+                    glBegin(GL_QUADS);
+                    glTexCoord2f(0, 0); glVertex3f(it->x, it->y, 0);
+                    glTexCoord2f(1, 0); glVertex3f(it->x + it->w, it->y, 0);
+                    glTexCoord2f(1, 1); glVertex3f(it->x + it->w, it->y + it->h, 0);
+                    glTexCoord2f(0, 1); glVertex3f(it->x, it->y + it->h, 0);
+                    glEnd();
+
+                    if (it->type != MenuItem::IMAGE) {
+                        // Mouseover highlight effect
+                        for (int i = 0; i < 10; i++) {
+                            if (1 - ((float)i) / 10 - (1 - it->effectfade) > 0) {
+                                glColor4f(it->r, it->g, it->b, (1 - ((float)i) / 10 - (1 - it->effectfade)) * .25);
+                                glBegin(GL_QUADS);
+                                glTexCoord2f(0, 0); glVertex3f(it->x - ((float)i) * 1 / 2, it->y - ((float)i) * 1 / 2, 0);
+                                glTexCoord2f(1, 0); glVertex3f(it->x + it->w + ((float)i) * 1 / 2, it->y - ((float)i) * 1 / 2, 0);
+                                glTexCoord2f(1, 1); glVertex3f(it->x + it->w + ((float)i) * 1 / 2, it->y + it->h + ((float)i) * 1 / 2, 0);
+                                glTexCoord2f(0, 1); glVertex3f(it->x - ((float)i) * 1 / 2, it->y + it->h + ((float)i) * 1 / 2, 0);
+                                glEnd();
+                            }
                         }
                     }
                 }
@@ -383,7 +405,7 @@ void Menu::drawItems() {
             case MenuItem::BUTTON:
                 glColor4f(it->r, it->g, it->b, 1);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                if (it->id >= 4000 && it->id <= 5000) {
+                if (it->id >= 1000) {
                     Game::text->glPrint(it->x, it->y, it->text.c_str(), 0, 0.7, 640, 480);
                 } else {
                     Game::text->glPrint(it->x, it->y, it->text.c_str(), 0, 1, 640, 480);
@@ -554,46 +576,33 @@ void Menu::updateControlsMenu()
 
 void Menu::updateModsMenu() {
     try {
-        std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
-        if (!Folders::file_exists(modListFilePath)) {
-            Folders::createModListFile();
+        // Read PackList.json to get the list of packs
+        std::string packListPath = Folders::getResourcePath("/PackList.json");
+        if (!Folders::file_exists(packListPath)) {
+            Folders::createPackListFile(); // This creates the PackList.json
         }
 
-        std::ifstream modListFile(modListFilePath);
-        std::string line;
-        availableMods.clear();
-        enabledMods.clear();
+        std::ifstream packListFile(packListPath);
+        nlohmann::json packListJson;
+        availableMods.clear();  // Use availableMods to store all mods
 
-        if (modListFile.is_open()) {
-            while (getline(modListFile, line)) {
-                size_t pos = line.find(":");
-                if (pos != std::string::npos) {
-                    std::string folderName = line.substr(0, pos);
-                    std::string modStatus = line.substr(pos + 1);
-                    modStatus.erase(0, modStatus.find_first_not_of(" \t"));  // Trim leading spaces
-                    modStatus.erase(modStatus.find_last_not_of(" \t") + 1);  // Trim trailing spaces
+        if (packListFile.is_open()) {
+            packListFile >> packListJson;
 
-                    std::string modInfoPath = Folders::getModResourcePath(folderName, "modinfo.json");
-                    ModInfo modInfo;
-                    if (Folders::file_exists(modInfoPath)) {
-                        modInfo = ModInfo::fromJson(modInfoPath);
-                        modInfo.folderName = folderName;  // Assign folderName separately
-                    } else {
-                        modInfo.folderName = folderName;
-                        modInfo.infoName = folderName;
-                        modInfo.description = "Legacy Mod";
-                    }
-
-                    if (modStatus == "1") {
-                        enabledMods.push_back(modInfo);
-                    } else {
-                        availableMods.push_back(modInfo);
-                    }
-                }
+            const auto& mods = packListJson["Packs"]["Mods"];
+            for (const auto& mod : mods) {
+                ModInfo modInfo;
+                modInfo.folderName = mod["ModName"];
+                modInfo.infoName = mod["ModName"];  // Default to folder name for display
+                modInfo.description = mod["Description"];
+                modInfo.version = mod["Version"];
+                
+                availableMods.push_back(modInfo);  // Push all mods into availableMods
             }
-            modListFile.close();
+
+            packListFile.close();
         } else {
-            std::cerr << "Unable to open " << modListFilePath << std::endl;
+            std::cerr << "Unable to open PackList.json." << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Exception occurred: " << e.what() << std::endl;
@@ -602,108 +611,78 @@ void Menu::updateModsMenu() {
     drawModMenu();
 }
 
-
 void Menu::drawModMenu() {
     clearMenu();
 
-    // Copy the current mod states to pending vectors
-    pendingAvailableMods = availableMods;
-    pendingEnabledMods = enabledMods;
-
-    // Render the mod menu using the pending vectors for display
-    int menuPadding = 50;
+    // Define UI layout dimensions
+    int menuPadding = 30;
     int leftBoxX = menuPadding;
     int leftBoxY = 50;
     int leftBoxW = 200;
     int leftBoxH = 400;
     int rightBoxX = leftBoxX + leftBoxW + menuPadding;
     int rightBoxY = leftBoxY;
-    int rightBoxW = leftBoxW;
+    int rightBoxW = 300;  // Wider box for mod details
     int rightBoxH = leftBoxH;
 
     int cardHeight = 70;
     int cardPadding = 5;
-    int applyButtonX = 70;
-    int applyButtonY = 10;
-    int backButtonX = 10;
-    int backButtonY = 10;
 
-    // Draw the bounding boxes for available and enabled mod sections
-    addLineRect(8000, leftBoxX, leftBoxY, leftBoxW, leftBoxH, 1.0f, 0.0f, 0.0f);  // Red bounding box for available mods
-    addLineRect(8001, rightBoxX, rightBoxY, rightBoxW, rightBoxH, 1.0f, 0.0f, 0.0f); // Red bounding box for enabled mods
+    // Draw the bounding boxes for mods and mod details
+    //addLineRect(8000, leftBoxX, leftBoxY, leftBoxW, leftBoxH, 1.0f, 0.0f, 0.0f);  // Red bounding box for mods
+    //addLineRect(8001, rightBoxX, rightBoxY, rightBoxW, rightBoxH, 1.0f, 0.0f, 0.0f); // Red bounding box for mod details
 
-    int cardX, cardY;
-    int cardW = leftBoxW - 2 * cardPadding;
-    int maxTextWidth = cardW - 50;
+    // Render mods with `pack.png` and mod name, starting from the top
+    int yPos = leftBoxY + leftBoxH - cardHeight;  // Start from the top of the box
+    int packIconSize = 45;
 
-    int labelId = 3000;  // Start IDs for labels
-    int enabledButtonId = 2000;  // Start IDs for enabled buttons
-    int availButtonId = 1000;  // Start IDs for available buttons
+    int ydPos = leftBoxY + rightBoxH; 
+    // If a mod is selected, display its details on the right side
+    if (selectedModIndex >= 0 && selectedModIndex < availableMods.size()) {
+        ModInfo modInfo = availableMods[selectedModIndex];
 
-    // Render pending available mods
-    int yPos = leftBoxY + cardPadding;
-    for (size_t i = 0; i < pendingAvailableMods.size(); ++i) {
-        ModInfo modInfo = pendingAvailableMods[i];
-        std::string modInfoName = modInfo.infoName;
-        std::string modDescription = modInfo.description;
-
-        cardX = leftBoxX + cardPadding;
-        cardY = yPos;
-
-        // Draw mod name label using infoName
-        addLabel(labelId + i, modInfoName, cardX + cardPadding, cardY + 20, 1, 1, 1);
-
-        addButtonImage(availButtonId + i, Mainmenuitems[10], cardX + cardW - 40, cardY, 40, 40, 0.5f, 1.0f, 0.5f, 90.0f);
-        yPos += cardHeight + cardPadding;
+        // Display mod details (name, description, version)
+        addLabel(4000, "Mod Name: " + modInfo.infoName, rightBoxX + 10, ydPos - 30, 1, 1, 1);
+        addLabel(4001, "Version: " + modInfo.version, rightBoxX + 10, ydPos - 60, 1, 1, 1);
+        addLabel(4002, "Description: " + modInfo.description, rightBoxX + 10, ydPos - 90, 1, 1, 1);
     }
 
-    // Render pending enabled mods
-    yPos = rightBoxY + cardPadding;
-    for (size_t i = 0; i < pendingEnabledMods.size(); ++i) {
-        ModInfo modInfo = pendingEnabledMods[i];
+    for (size_t i = 0; i < availableMods.size(); ++i) {
+        ModInfo modInfo = availableMods[i];
         std::string modInfoName = modInfo.infoName;
-        std::string modDescription = modInfo.description;
 
-        cardX = rightBoxX + cardPadding;
-        cardY = yPos;
+        if (i == selectedModIndex) {
+            addLineRect(9000 + i, leftBoxX, yPos, leftBoxW, cardHeight, 1.0f, 0.0f, 0.0f);  // White rectangle for the selected mod
+        }
 
-        addLabel(labelId + 100 + i, modInfoName, cardX + cardPadding, cardY + 20, 1, 1, 1);
+        // Draw the mod's `pack.png` on the left
+        Texture modTexture;
+        modTexture.load(modInfo.folderName + "/pack.png", 0);
+        addImage(1000 + i, modTexture, leftBoxX + cardPadding, yPos + (packIconSize / 2) - (cardPadding * 2), packIconSize, packIconSize, 1.0f, 1.0f, 1.0f);
 
-        addButtonImage(enabledButtonId + i, Mainmenuitems[10], cardX + cardW - 40, cardY, 40, 40, 1.0f, 0.0f, 0.0f, -90.0f);
-        yPos += cardHeight + cardPadding;
+        // Draw the mod name next to the image
+        addLabel(2000 + i, modInfoName, leftBoxX + cardPadding + packIconSize, yPos + packIconSize, 1, 1, 1);
+
+        // Add an invisible rectangular button over the mod's area
+        addRectButton(3000 + i, leftBoxX, yPos, leftBoxW, cardHeight);  // Invisible rect button
+
+        // Move to the next position for the next card, going downward
+        yPos -= cardHeight + cardPadding;
     }
 
-    addButton(2, "Apply", applyButtonX, applyButtonY, 0.5f, 1.0f, 0.5f);
-    addButton(1, "Back", backButtonX, backButtonY, 1.0f, 0.0f, 0.0f);
+    // Back button
+    addButton(1, "Back", 10, 10, 1.0f, 0.0f, 0.0f);
 }
 
 
 void Menu::handleArrowButtonPress(int buttonId)
 {
-    if (buttonId >= 1000 && buttonId < 2000) {
-        size_t modIndex = static_cast<size_t>(buttonId - 1000);
-        if (modIndex < pendingAvailableMods.size()) {
-            // Move mod from available to enabled
-            pendingEnabledMods.push_back(pendingAvailableMods[modIndex]);
-            pendingAvailableMods.erase(pendingAvailableMods.begin() + modIndex);
-
-            // Update actual mod lists
-            availableMods = pendingAvailableMods;
-            enabledMods = pendingEnabledMods;
-
-            drawModMenu();
-        }
-    } else if (buttonId >= 2000) {
-        size_t modIndex = static_cast<size_t>(buttonId - 2000);
-        if (modIndex < pendingEnabledMods.size()) {
-            // Move mod from enabled to available
-            pendingAvailableMods.push_back(pendingEnabledMods[modIndex]);
-            pendingEnabledMods.erase(pendingEnabledMods.begin() + modIndex);
-
-            // Update actual mod lists
-            availableMods = pendingAvailableMods;
-            enabledMods = pendingEnabledMods;
-
+    if (buttonId >= 1000 && buttonId < 1000 + static_cast<int>(availableMods.size())) {
+        size_t packIndex = static_cast<size_t>(buttonId - 1000);
+        if (packIndex < availableMods.size()) {
+            // Move pack from available to enabled
+            enabledMods.push_back(availableMods[packIndex]);
+            availableMods.erase(availableMods.begin() + packIndex);
             drawModMenu();
         }
     }
@@ -712,80 +691,45 @@ void Menu::handleArrowButtonPress(int buttonId)
 void Menu::applyModChanges() {
     std::cout << "Applying mod changes..." << std::endl;
 
-    // Copy pending changes to the actual mod lists
-    availableMods = pendingAvailableMods;
-    enabledMods = pendingEnabledMods;
+    // Update PackList.json with changes
+    std::string packListPath = Folders::getResourcePath("/PackList.json");
+    std::ofstream packListFile(packListPath);
 
-    // Update the mod configuration files
-    saveModOrder();
+    if (packListFile.is_open()) {
+        nlohmann::json packListJson;
 
-    // Apply mod changes by deactivating old mods and activating new ones
-    for (const auto& mod : enabledMods) {
-        std::cout << "Enabling mod: " << mod.folderName << std::endl;
-        setModActive(mod.folderName, true);
-    }
-
-    for (const auto& mod : availableMods) {
-        std::cout << "Disabling mod: " << mod.folderName << std::endl;
-        setModActive(mod.folderName, false);
-    }
-
-    // Safely reload game assets (textures, models, etc.)
-    Game::reloadGameAssets();
-    flash();
-    fireSound();
-
-    std::cout << "Mod changes applied successfully." << std::endl;
-}
-
-void Menu::setModActive(const std::string& folderName, bool active) {
-    std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
-    std::ifstream modListFileIn(modListFilePath);
-    std::ofstream modListFileOut(modListFilePath + ".tmp");
-    std::string line;
-
-    if (modListFileIn.is_open() && modListFileOut.is_open()) {
-        while (getline(modListFileIn, line)) {
-            if (line.find(folderName) != std::string::npos) {
-                size_t pos = line.find(":");
-                if (pos != std::string::npos) {
-                    line = line.substr(0, pos) + (active ? ": 1" : ": 0");
-                }
-            }
-            modListFileOut << line << std::endl;
+        // Save available mods
+        for (const auto& mod : availableMods) {
+            nlohmann::json modEntry;
+            modEntry["ModName"] = mod.folderName;
+            modEntry["Status"] = "Available";
+            modEntry["Description"] = mod.description;
+            modEntry["Version"] = mod.version;
+            packListJson["Packs"]["Mods"].push_back(modEntry);
         }
-        modListFileIn.close();
-        modListFileOut.close();
 
-        std::filesystem::remove(modListFilePath);
-        std::filesystem::rename(modListFilePath + ".tmp", modListFilePath);
+        // Save enabled mods
+        for (const auto& mod : enabledMods) {
+            nlohmann::json modEntry;
+            modEntry["ModName"] = mod.folderName;
+            modEntry["Status"] = "Enabled";
+            modEntry["Description"] = mod.description;
+            modEntry["Version"] = mod.version;
+            packListJson["Packs"]["Mods"].push_back(modEntry);
+        }
+
+        packListFile << packListJson.dump(4);  // Pretty-print with 4 spaces
+        packListFile.close();
+        std::cout << "Mod changes saved to PackList.json." << std::endl;
     } else {
-        std::cerr << "Unable to open " << modListFilePath << std::endl;
+        std::cerr << "Unable to open PackList.json for writing." << std::endl;
     }
-}
 
-void Menu::saveModOrder() {
-    try {
-        std::string modListFilePath = Folders::getUserDataPath() + "/modlist.txt";
-        std::ofstream modListFile(modListFilePath);
-
-        if (modListFile.is_open()) {
-            for (const auto& mod : availableMods) {
-                modListFile << mod.folderName << ": 0" << std::endl;  // Save folderName
-            }
-
-            for (const auto& mod : enabledMods) {
-                modListFile << mod.folderName << ": 1" << std::endl;  // Save folderName
-            }
-
-            modListFile.close();
-            std::cout << "Mod order saved successfully." << std::endl;
-        } else {
-            std::cerr << "Unable to open " << modListFilePath << std::endl;
-        }
-    } catch (const std::exception &e) {
-        std::cerr << "An exception occurred: " << e.what() << std::endl;
-    }
+    // Reload game assets with the newly applied packs
+    Game::reloadGameAssets();
+    fireSound();
+    flash();
+    std::cout << "Mod changes applied successfully." << std::endl;
 }
 
 /*
@@ -854,44 +798,66 @@ void Menu::Load()
             addButton(devtools ? 10 : 9, "Back", 10, 10);
             updateControlsMenu();
             break;
-        case 5: {
-            LoadCampaign();
-            addLabel(-1, Account::active().getName(), 5, 400);
-            addButton(1, "Tutorial", 5, 300);
-            addButton(2, "Challenge", 5, 240);
-            addButton(3, "Delete User", 400, 10);
-            addButton(4, "Main Menu", 5, 10);
-            addButton(5, "Change User", 5, 180);
-            addButton(6, "Campaign: " + Account::active().getCurrentCampaign(), 200, 420);
+    case 5: {
+        // Load the selected campaign
+        LoadCampaign();
 
-            //show campaign map
-            //with (2,-5) offset from old code
-            addImage(-1, Mainmenuitems[7], 150 + 2, 60 - 5, 400, 400);
-            //show levels
-            int numlevels = Account::active().getCampaignChoicesMade();
-            numlevels += numlevels > 0 ? campaignlevels[numlevels - 1].nextlevel.size() : 1;
-            for (int i = 0; i < numlevels; i++) {
-                XYZ midpoint = campaignlevels[i].getCenter();
-                float itemsize = campaignlevels[i].getWidth();
-                const bool active = (i >= Account::active().getCampaignChoicesMade());
-                if (!active) {
-                    itemsize /= 2;
-                }
+        // Add the user’s name and main buttons for interaction
+        addLabel(-1, Account::active().getName(), 5, 400);
+        addButton(1, "Tutorial", 5, 300);
+        addButton(2, "Challenge", 5, 240);
+        addButton(3, "Delete User", 400, 10);
+        addButton(4, "Main Menu", 5, 10);
+        addButton(5, "Change User", 5, 180);
+        addButton(6, "Campaign: " + Account::active().getCurrentCampaign(), 200, 420);
 
-                if (i >= 1) {
-                    XYZ start = campaignlevels[i - 1].getCenter();
-                    addMapLine(start.x, start.y, midpoint.x - start.x, midpoint.y - start.y, 0.5, active ? 1 : 0.5, active ? 1 : 0.5, 0, 0);
-                }
-                addMapMarker(NB_CAMPAIGN_MENU_ITEM + i, Mapcircletexture,
-                             midpoint.x - itemsize / 2, midpoint.y - itemsize / 2, itemsize, itemsize, active ? 1 : 0.5, 0, 0);
+        // Display the campaign map image
+        addImage(-1, Mainmenuitems[7], 150 + 2, 60 - 5, 400, 400);
 
-                if (active) {
-                    addMapLabel(-2, campaignlevels[i].description,
-                                campaignlevels[i].getStartX() + 10,
-                                campaignlevels[i].getStartY() - 4);
-                }
+        // Get the number of levels that should be displayed
+        int numLevelsCompleted = Account::active().getCampaignChoicesMade();
+        int numLevelsToShow = numLevelsCompleted;
+
+        // Show the next available level, accounting for branching
+        numLevelsToShow += (numLevelsCompleted > 0) ? campaignlevels[numLevelsCompleted].nextlevel.size() : 1;
+
+        // Loop through the campaign levels and display each one on the map
+        for (int i = 0; i < numLevelsToShow; i++) {
+            XYZ midpoint = campaignlevels[i].getCenter();
+            float itemsize = campaignlevels[i].getWidth();
+            bool isLevelActive = (i >= numLevelsCompleted);
+
+            // Make inactive levels appear smaller
+            if (!isLevelActive) {
+                itemsize /= 2;
             }
-        } break;
+
+            // Draw connecting lines between levels
+            if (i >= 1) {
+                XYZ start = campaignlevels[i - 1].getCenter();
+                addMapLine(start.x, start.y, midpoint.x - start.x, midpoint.y - start.y, 0.5, 
+                        isLevelActive ? 1 : 0.5, isLevelActive ? 1 : 0.5, 0, 0);
+            }
+
+            // Add the campaign level marker (active or inactive)
+            addMapMarker(NB_CAMPAIGN_MENU_ITEM + i, Mapcircletexture,
+                        midpoint.x - itemsize / 2, midpoint.y - itemsize / 2, itemsize, itemsize, 
+                        isLevelActive ? 1 : 0.5, 0, 0);
+
+            // Log the next level marker
+            if (isLevelActive) {
+                std::cerr << "Marking active level: " << campaignlevels[i].mapname << std::endl;
+            }
+
+            // Add labels for active levels
+            if (isLevelActive) {
+                addMapLabel(-2, campaignlevels[i].description,
+                            campaignlevels[i].getStartX() + 10,
+                            campaignlevels[i].getStartY() - 4);
+            }
+        }
+    } 
+    break;
         case 6:
             addLabel(-1, "Are you sure you want to delete this user?", 10, 400);
             addButton(1, "Yes", 10, 360);
@@ -999,6 +965,19 @@ void Menu::Tick()
 
     //menu buttons
     selected = getSelected(mousecoordh * 640 / screenwidth, 480 - mousecoordv * 480 / screenheight);
+
+    if (mainmenu == 19) {
+        if (Input::MouseClicked()) {
+            std::cerr << "Mouse clicked. Selected item: " << selected << std::endl;
+
+            // Check if a mod has been clicked using the new rect button system
+            if (selected >= 3000 && selected < 3000 + static_cast<int>(availableMods.size())) {
+                selectedModIndex = selected - 3000;  // Update the selected mod index based on rect button ID
+                drawModMenu();  // Redraw the menu to reflect the new selection
+            }
+        }
+    }
+
 
     // some specific case where we do something even if the left mouse button is not pressed.
     if ((mainmenu == 5) && (endgame == 2)) {
@@ -1170,6 +1149,8 @@ void Menu::Tick()
                         toggleFullscreen();
                         break;
                     case 15: //mod menu
+                        fireSound(firestartsound);
+                        flash();
                         mainmenu = 19;
                         break;
                 }
@@ -1200,19 +1181,27 @@ void Menu::Tick()
                     loading = 2;
                     loadtime = 0;
                     targetlevel = 7;
+
                     if (firstLoadDone) {
                         TickOnceAfter();
                     } else {
                         LoadStuff();
                     }
+
                     whichchoice = selected - NB_CAMPAIGN_MENU_ITEM - Account::active().getCampaignChoicesMade();
-                    actuallevel = (Account::active().getCampaignChoicesMade() > 0 ? campaignlevels[Account::active().getCampaignChoicesMade() - 1].nextlevel[whichchoice] : 0);
+
+                    actuallevel = (Account::active().getCampaignChoicesMade() > 0 ? campaignlevels[Account::active().getCampaignChoicesMade() -1].nextlevel[whichchoice] : 0);
+                    std::cerr << "Selected level: " << Account::active().getCampaignChoicesMade() + 1 << " (" << campaignlevels[actuallevel].mapname << ")" << std::endl;
+
                     visibleloading = true;
                     stillloading = 1;
+
                     LoadLevel(campaignlevels[actuallevel].mapname.c_str());
+
                     campaign = 1;
                     mainmenu = 0;
                     gameon = 1;
+                    std::cerr << "Game started. Pausing menu theme." << std::endl;
                     pause_sound(stream_menutheme);
                 }
                 switch (selected) {
@@ -1245,22 +1234,47 @@ void Menu::Tick()
                     case 5:
                         mainmenu = 7;
                         break;
-                    case 6:
-                        vector<string> campaigns = ListCampaigns();
-                        vector<string>::iterator c;
-                        if ((c = find(campaigns.begin(), campaigns.end(), Account::active().getCurrentCampaign())) == campaigns.end()) {
+                    case 6: {
+                        // Get the list of all campaigns (both from the base game and mods)
+                        std::vector<std::string> campaigns = ListCampaigns();
+                        
+                        // Debug: print the available campaigns
+                        std::cerr << "Available campaigns: ";
+                        for (const auto& campaign : campaigns) {
+                            std::cerr << campaign << " ";
+                        }
+                        std::cerr << std::endl;
+
+                        // Check if the current campaign is already in the list
+                        std::string currentCampaign = Account::active().getCurrentCampaign();
+                        std::cerr << "Current campaign: " << currentCampaign << std::endl;
+
+                        auto it = std::find(campaigns.begin(), campaigns.end(), currentCampaign);
+
+                        // If current campaign is not found or the list is empty, fall back to the first campaign
+                        if (it == campaigns.end() || campaigns.empty()) {
+                            std::cerr << "Current campaign not found in the list, falling back to the first campaign." << std::endl;
                             if (!campaigns.empty()) {
                                 Account::active().setCurrentCampaign(campaigns.front());
+                                std::cerr << "New campaign: " << campaigns.front() << std::endl;
                             }
                         } else {
-                            c++;
-                            if (c == campaigns.end()) {
-                                c = campaigns.begin();
+                            // Move to the next campaign in the list, or cycle back to the first if at the end
+                            std::cerr << "Cycling to the next campaign..." << std::endl;
+                            ++it;
+                            if (it == campaigns.end()) {
+                                std::cerr << "Reached the end of the campaign list, cycling back to the first campaign." << std::endl;
+                                it = campaigns.begin();
                             }
-                            Account::active().setCurrentCampaign(*c);
+                            Account::active().setCurrentCampaign(*it);
+                            std::cerr << "New campaign: " << *it << std::endl;
                         }
+
+                        // Reload the campaign and update the menu
                         Load();
-                        break;
+                        std::cerr << "Campaign loaded and menu updated." << std::endl;
+                    }
+                    break;
                 }
                 break;
             case 6:
@@ -1317,7 +1331,7 @@ void Menu::Tick()
                     } else {
                         LoadStuff();
                     }
-                    LoadLevel(selected);
+                    LoadLevel(selected);           
                     campaign = 0;
 
                     mainmenu = 0;

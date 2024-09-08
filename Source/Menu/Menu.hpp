@@ -35,7 +35,8 @@ struct MenuItem
         MAPMARKER,
         MAPLINE,
         MAPLABEL,
-        LINERECT 
+        LINERECT,
+        RECTBUTTON 
     } type;
 
     int id;
@@ -65,6 +66,7 @@ public:
     static void addButtonImage(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 1, float b = 1, float rotation = 0.0f);
     static void addMapLine(int x, int y, int w, int h, float startsize, float endsize, float r, float g, float b);
     static void addLineRect(int id, int x, int y, int w, int h, float r, float g, float b);
+    static void addRectButton(int id, int x, int y, int w, int h, float r, float g, float b);
     static void addMapMarker(int id, Texture texture, int x, int y, int w, int h, float r = 1, float g = 0, float b = 0);
     static void addMapLabel(int id, const std::string& text, int x, int y, float r = 1, float g = 0, float b = 0);
     static void setText(int id, const std::string& text);

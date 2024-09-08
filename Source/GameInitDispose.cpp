@@ -66,9 +66,17 @@ extern float accountcampaigntime[10];
 extern int accountcampaignchoicesmade[10];
 extern int accountcampaignchoices[10][5000];
 
-void LOG(const std::string&, ...)
-{
-    // !!! FIXME: write me.
+void LOG(const std::string& fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    // Append a newline to the format string if needed
+    std::string formatted = fmt + "\n";
+
+    // Print the formatted string with the newline
+    vprintf(formatted.c_str(), args);
+
+    va_end(args);
 }
 
 void Dispose()
@@ -123,7 +131,7 @@ void LoadSave(const std::string& fileName, GLubyte* array)
 {
     LOGFUNC;
 
-    LOG(std::string("Loading (S)...") + fileName);
+    LOG(std::string("Loading (S)... ") + fileName);
 
     //Load Image
     float temptexdetail = texdetail;
@@ -452,7 +460,7 @@ void Game::InitGame()
 
     Account::loadFile(Folders::getUserSavePath());
 
-    Folders::createModListFile();
+    Folders::createPackListFile();
 
     whichjointstartarray[0] = righthip;
     whichjointendarray[0] = rightfoot;
@@ -629,8 +637,6 @@ void Game::LoadScreenTexture()
 void Game::reloadGameAssets()
 {
     float temptexdetail;
-    float viewdistdetail;
-    float megascale = 1;
 
     temptexdetail = texdetail;
     if (texdetail > 2) {
