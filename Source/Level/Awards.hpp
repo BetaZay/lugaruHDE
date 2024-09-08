@@ -41,15 +41,16 @@ extern void award_bonus(int playerid, int bonusid, int alt_value = 0);
 
 enum award_types
 {
-#define DECLARE_AWARD(id, name) id,
-#include "Awards.def"
-#undef DECLARE_AWARD
+    #define DECLARE_AWARD(id, name) id,
+    #include "Awards.def"
+    #undef DECLARE_AWARD
     award_count
 };
 
+
 extern const char* award_names[award_count];
 
-extern int award_awards(int*);
+extern int award_awards(int*, int);
 
 extern float damagetaken;
 extern int numfalls;

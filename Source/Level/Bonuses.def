@@ -18,6 +18,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 DECLARE_BONUS(nobonus, "", 0)
+DECLARE_BONUS(Victory, "Level Complete!", 0)
 DECLARE_BONUS(tracheotomy, "Tracheotomy!", 100)
 DECLARE_BONUS(backstab, "Backstabber!", 100)
 DECLARE_BONUS(spinecrusher, "Spinecrusher!", 100)

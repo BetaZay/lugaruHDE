@@ -590,16 +590,30 @@ int Game::DrawGLScene(StereoSide side)
             if (!Tutorial::active) {
                 if (bonus > 0 && bonustime < 1 && !winfreeze && !Dialog::inDialog()) {
                     const char* bonus_name;
+
+                    // Determine the bonus name
                     if (bonus < bonus_count) {
                         bonus_name = bonus_names[bonus];
                     } else {
-                        bonus_name = "Excellent!"; // When does this happen?
+                        bonus_name = "Excellent!";
                     }
-                    text->glPrintOutlined(1, 0, 0, 1 - bonustime, 1024 / 2 - 10 * strlen(bonus_name), 768 / 16 + 768 * 4 / 5, bonus_name, 1, 2, 1024, 768);
 
-                    string = to_string(bonusvalue);
-                    text->glPrintOutlined(1, 0, 0, 1 - bonustime, 1024 / 2 - 10 * string.size(), 768 / 16 - 20 + 768 * 4 / 5, string, 1, 2 * .8, 1024, 768);
+                    // Check if the bonus is "Victory" and adjust the rendering position for bottom-right origin
+                    if (bonusvalue > 0) {
+                        // Render other bonuses
+                        text->glPrintOutlined(1, 0, 0, 1 - bonustime, 1024 / 2 - 10 * strlen(bonus_name), 768 / 16 + 768 * 4 / 5, bonus_name, 1, 2, 1024, 768);
+                    } else {
+                        // Render "Victory" bonus higher on the screen
+                        text->glPrintOutlined(1, 0, 0, 1 - bonustime, 1024 / 2 - 10 * strlen(bonus_name), (768 / 16 + 768 * 4 / 5) + 50, bonus_name, 1, 2, 1024, 768);
+                    }
 
+                    // Only print the bonus value if it's greater than 0 and not "Victory"
+                    if (bonusvalue > 0) {
+                        string = to_string(bonusvalue);
+                        text->glPrintOutlined(1, 0, 0, 1 - bonustime, 1024 / 2 - 10 * string.size(), 768 / 16 - 20 + 768 * 4 / 5, string, 1, 2 * .8, 1024, 768);
+                    }
+                    
+                    // Set the color for rendering
                     glColor4f(.5, .5, .5, 1);
                 }
             }
@@ -1326,7 +1340,7 @@ int Game::DrawGLScene(StereoSide side)
 
             //Awards
             int awards[award_count];
-            int numawards = award_awards(awards);
+            int numawards = award_awards(awards, wontime);
 
             for (int i = 0; i < numawards && i < 6; i++) {
                 text->glPrintOutlined(1024 / 30, 768 * 6 / 8 - 90 - 40 * i, award_names[awards[i]], 1, 2, 1024, 768);

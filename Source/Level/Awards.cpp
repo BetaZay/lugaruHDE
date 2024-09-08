@@ -28,6 +28,7 @@ int bonustotal;
 int startbonustotal;
 float bonustime;
 float bonusnum[100];
+float wonleveltime = 0;
 
 const char* bonus_names[bonus_count] = {
 #define DECLARE_BONUS(id, name, ...) name,
@@ -76,86 +77,149 @@ int numreversals;
 int numattacks;
 int maxalarmed;
 
-int award_awards(int* awards)
+int award_awards(int* awards, int time)
 {
     int numawards = 0;
+
+    // Flawless Award: No damage and no blood loss
     if (damagetaken == 0 && Person::players[0]->bloodloss == 0) {
         awards[numawards] = awardflawless;
         numawards++;
     }
+
+    // All Dead Award: All enemies are dead
     bool alldead = true;
     for (unsigned i = 1; i < Person::players.size(); i++) {
         if (Person::players[i]->dead != 2) {
-            alldead = 0;
+            alldead = false;
         }
     }
     if (alldead) {
         awards[numawards] = awardalldead;
         numawards++;
     }
-    alldead = 1;
+
+    // No Dead Award: All allies are alive
+    alldead = true;
     for (unsigned i = 1; i < Person::players.size(); i++) {
         if (Person::players[i]->dead != 1) {
-            alldead = 0;
+            alldead = false;
         }
     }
     if (alldead) {
         awards[numawards] = awardnodead;
         numawards++;
     }
+
+    // Stealth Award: No alarms triggered and no throw kills
     if (numresponded == 0 && !numthrowkill) {
         awards[numawards] = awardstealth;
         numawards++;
     }
+
+    // Bojutsu Award: All attacks were with a staff
     if (numattacks == numstaffattack && numattacks > 0) {
         awards[numawards] = awardbojutsu;
         numawards++;
     }
+
+    // Swordsman Award: All attacks were with a sword
     if (numattacks == numswordattack && numattacks > 0) {
         awards[numawards] = awardswordsman;
         numawards++;
     }
+
+    // Knife Fighter Award: All attacks were with a knife
     if (numattacks == numknifeattack && numattacks > 0) {
         awards[numawards] = awardknifefighter;
         numawards++;
     }
+
+    // Kung Fu Award: All attacks were unarmed, no throw kills
     if (numattacks == numunarmedattack && numthrowkill == 0 && weapons.size() > 0) {
         awards[numawards] = awardkungfu;
         numawards++;
     }
+
+    // Evasion Award: The player escaped from battle
     if (numescaped > 0) {
         awards[numawards] = awardevasion;
         numawards++;
     }
+
+    // Acrobat Award: No flip failures, and more than 20 flips
     if (numflipfail == 0 && numflipped + numwallflipped * 2 > 20) {
         awards[numawards] = awardacrobat;
         numawards++;
     }
+
+    // Long Range Award: All enemies were killed with throw attacks
     if (numthrowkill == (int(Person::players.size()) - 1)) {
         awards[numawards] = awardlongrange;
         numawards++;
     }
-    alldead = 1;
+
+    // Brutal Award: Kills were done after death
+    alldead = true;
     for (unsigned i = 1; i < Person::players.size(); i++) {
         if (Person::players[i]->dead != 2) {
-            alldead = 0;
+            alldead = false;
         }
     }
     if (numafterkill > 0 && alldead) {
         awards[numawards] = awardbrutal;
         numawards++;
     }
+
+    // Aikido Award: High percentage of reversals
     if (numreversals > ((float)numattacks) * .8 && numreversals > 3) {
         awards[numawards] = awardaikido;
         numawards++;
     }
+
+    // Strategy Award: Minimal alarms triggered
     if (maxalarmed == 1 && Person::players.size() > 2) {
         awards[numawards] = awardstrategy;
         numawards++;
     }
+
+    // Klutz Award: Many flip failures
     if (numflipfail > 3) {
         awards[numawards] = awardklutz;
         numawards++;
     }
+
+    // Coward Award: Escaped without fighting
+    if (numattacks == 0) {
+        awards[numawards] = awardcoward;
+        numawards++;
+    }
+
+    // Calculate the number of enemies defeated
+    int numEnemiesDefeated = 0;
+    for (unsigned i = 1; i < Person::players.size(); i++) {
+        if (Person::players[i]->dead > 0) {
+            numEnemiesDefeated++;
+        }
+    }
+
+    // Avoid division by zero
+    if (numEnemiesDefeated > 0) {
+        // Calculate average time per enemy
+        float avgTimePerEnemy = time / numEnemiesDefeated;
+
+        // Fast, Real Fast, and Damn Fast Awards based on avg time per enemy
+        if (avgTimePerEnemy <= 5) {
+            awards[numawards] = awardhedgehog;
+            numawards++;
+        } else if (avgTimePerEnemy <= 7) {
+            awards[numawards] = awardrealfast;
+            numawards++;
+        } else if (avgTimePerEnemy <= 10) {
+            awards[numawards] = awardfast;
+            numawards++;
+        }
+    }
+
     return numawards;
 }

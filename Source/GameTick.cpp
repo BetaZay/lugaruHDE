@@ -616,6 +616,7 @@ bool Game::LoadLevel(const std::string& name, bool tutorial)
     }
 
     weapons.clear();
+    Person::clearVictims();
     Person::players.resize(1);
 
     funpackf(tfile, "Bi", &mapvers);
@@ -3111,6 +3112,7 @@ void Game::Tick()
             } else if (bonustime == 0) {
                 emit_sound_np(fireendsound);
             }
+
             if (bonustime == 0) {
                 if (bonus != solidhit &&
                     bonus != twoxcombo &&
@@ -3121,17 +3123,21 @@ void Game::Tick()
                 } else {
                     bonusnum[bonus] += 0.15;
                 }
+                
                 if (Tutorial::active) {
                     bonusvalue = 0;
                 }
+                
                 if (bonusvalue > 0) {
                     bonusvalue /= bonusnum[bonus];
                     if (bonusvalue <= 0) {
                         bonusvalue = 0;
                     }
                 }
+                
                 bonustotal += bonusvalue;
             }
+
             bonustime += multiplier;
 
             //snow effects
@@ -4652,52 +4658,67 @@ void Game::TickOnceAfter()
         }
 
         if (changedelay <= 0 && !loading && !editorenabled && gameon && !Tutorial::active && changedelay != -999 && !won) {
+            // If the main player is dead, start a delay before restarting the level
             if (Person::players[0]->dead) {
-                changedelay = 1;
-                targetlevel = whichlevel;
+                changedelay = 1; // Delay before level change
+                targetlevel = whichlevel; // Restart the same level
             }
+
             alldead = true;
+            // Check if all players except the main player are dead
             for (unsigned i = 1; i < Person::players.size(); i++) {
                 if (!Person::players[i]->dead && Person::players[i]->howactive < typedead1) {
-                    alldead = false;
+                    alldead = false; // If any player is still alive, set alldead to false
                     break;
                 }
             }
 
+            // If all players are dead and the main player is alive, move to the next level (for kill everyone mode)
             if (alldead && !Person::players[0]->dead && maptype == mapkilleveryone) {
-                changedelay = 1;
-                targetlevel = whichlevel + 1;
+                changedelay = 1; // Delay before changing the level
+                targetlevel = whichlevel + 1; // Move to the next level
                 if (targetlevel > numchallengelevels - 1) {
-                    targetlevel = 0;
+                    targetlevel = 0; // Loop back to the first level if the last one is completed
+                }
+                
+                award_bonus(0, Victory); // Award victory bonus
+                
+                // Ensure the victory text is displayed longer
+                if (bonus == Victory) {
+                    bonustime = -5.0f; // Setting a negative bonustime allows the text to show for longer
                 }
             }
+
+            // If the player triggers the win hotspot or dialogue, move to the next level
             if (winhotspot || windialogue) {
-                changedelay = 0.1;
-                targetlevel = whichlevel + 1;
+                changedelay = 0.1; // Short delay before changing the level
+                targetlevel = whichlevel + 1; // Move to the next level
                 if (targetlevel > numchallengelevels - 1) {
-                    targetlevel = 0;
+                    targetlevel = 0; // Loop back to the first level if the last one is completed
                 }
             }
 
+            // If the kill hotspot is triggered, move to the next level
             if (Hotspot::killhotspot) {
-                changedelay = 1;
-                targetlevel = whichlevel + 1;
+                changedelay = 1; // Delay before changing the level
+                targetlevel = whichlevel + 1; // Move to the next level
                 if (targetlevel > numchallengelevels - 1) {
-                    targetlevel = 0;
+                    targetlevel = 0; // Loop back to the first level if the last one is completed
                 }
             }
 
+            // If the delay is set and the player has not died, the player has won the level
             if (changedelay > 0 && !Person::players[0]->dead && !won) {
-                //high scores, awards, win
+                // Handle high scores, awards, and winning the level
                 if (campaign) {
-                    Account::active().winCampaignLevel(whichchoice, bonustotal, leveltime);
-                    scoreadded = 1;
+                    Account::active().winCampaignLevel(whichchoice, bonustotal, leveltime); // Winning a campaign level
+                    scoreadded = 1; // Mark that score was added
                 } else {
-                    wonleveltime = leveltime;
-                    Account::active().winLevel(whichlevel, bonustotal - startbonustotal, leveltime);
+                    wonleveltime = leveltime; // Record the time when the player won the level
+                    Account::active().winLevel(whichlevel, bonustotal - startbonustotal, leveltime); // Handle level win outside of campaign
                 }
-                won = 1;
-                Account::saveFile(Folders::getUserSavePath());
+                won = 1; // Mark the level as won
+                Account::saveFile(Folders::getUserSavePath()); // Save the account data
             }
         }
 
@@ -4712,38 +4733,46 @@ void Game::TickOnceAfter()
             }
 
             if (!editorenabled && gameon && !mainmenu) {
+                // If the level is not in edit mode, the game is on, and the main menu is not active
+                
                 if (changedelay != -999) {
-                    changedelay -= multiplier / 7;
+                    changedelay -= multiplier / 7; // Gradually decrease the delay, unless it's set to a special value (-999)
                 }
+
+                // If the player is dead, prepare to restart the current level
                 if (Person::players[0]->dead) {
-                    targetlevel = whichlevel;
+                    targetlevel = whichlevel; // Restart the same level
                 }
+
+                // If the level is in the loading process (loading == 2) and not in campaign mode
                 if (loading == 2 && !campaign) {
-                    flash();
+                    flash(); // Trigger a visual flash
+                    fireSound(firestartsound); // Play starting sound for loading
 
-                    fireSound(firestartsound);
-
+                    // If the main player is not dead and transitioning to a new level, reset bonus totals
                     if (!Person::players[0]->dead && targetlevel != whichlevel) {
-                        startbonustotal = bonustotal;
+                        startbonustotal = bonustotal; // Reset the bonus total for the new level
                     }
 
-                    LoadLevel(targetlevel);
-                    fireSound();
-
-                    loading = 3;
+                    LoadLevel(targetlevel); // Load the next level
+                    fireSound(); // Play loading complete sound
+                    loading = 3; // Update the loading state
                 }
+
+                // Special case for campaign mode: load the appropriate campaign level
                 if (loading == 2 && targetlevel == whichlevel) {
-                    flash();
-                    loadtime = 0;
+                    flash(); // Trigger a visual flash
+                    loadtime = 0; // Reset the load time
 
-                    fireSound(firestartsound);
+                    fireSound(firestartsound); // Play starting sound
 
+                    // Load the campaign level based on the player's choices
                     LoadLevel(campaignlevels[Account::active().getCampaignChoicesMade()].mapname.c_str());
-
-                    fireSound();
-
-                    loading = 3;
+                    fireSound(); // Play loading complete sound
+                    loading = 3; // Update the loading state
                 }
+
+                // If the player is dead, or all players are dead (in "kill everyone" mode), or a win hotspot is triggered, start loading the next level
                 if (changedelay <= -999 &&
                     whichlevel != -2 &&
                     !loading &&
@@ -4751,20 +4780,26 @@ void Game::TickOnceAfter()
                      (alldead && maptype == mapkilleveryone) ||
                      (winhotspot) ||
                      (Hotspot::killhotspot))) {
-                    loading = 1;
+                    loading = 1; // Set the loading state to start the process of loading the next level
                 }
+
+                // If the player is dead, all players are dead (in "kill everyone" mode), a win hotspot is triggered, or a kill hotspot is triggered, and the delay has passed
                 if ((Person::players[0]->dead ||
                      (alldead && maptype == mapkilleveryone) ||
                      (winhotspot) ||
                      (windialogue) ||
                      (Hotspot::killhotspot)) &&
                     changedelay <= 0) {
+
+                    // If it's not a special level (-2), and the player is not dead, freeze the game and prepare for the win
                     if (whichlevel != -2 && !loading && !Person::players[0]->dead) {
-                        winfreeze = true;
-                        changedelay = -999;
+                        winfreeze = true; // Freeze the game upon winning
+                        changedelay = -999; // Set the delay to stop the countdown
                     }
+
+                    // If the player is dead, start loading the next level
                     if (Person::players[0]->dead) {
-                        loading = 1;
+                        loading = 1; // Set loading state to 1 to start loading the next level
                     }
                 }
             }

@@ -83,6 +83,9 @@ void Dispose()
 {
     LOGFUNC;
 
+    Person::clearVictims();
+
+
     if (Game::endgame == 2) {
         Account::active().endGame();
         Game::endgame = 0;

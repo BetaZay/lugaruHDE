@@ -489,7 +489,7 @@ bool Model::load(const std::string& filename)
 
     LOGFUNC;
 
-    LOG(std::string("Loading model... ") + filename);
+    LOG(std::string("Loading model...") + filename);
 
     Game::LoadingScreen();
 
@@ -561,7 +561,7 @@ bool Model::loaddecal(const std::string& filename)
 
     LOGFUNC;
 
-    LOG(std::string("Loading decal... ") + Folders::getResourcePath(filename));
+    LOG(std::string("Loading decal...") + Folders::getResourcePath(filename));
 
     type = decalstype;
     color = 0;
@@ -631,7 +631,7 @@ bool Model::loadraw(const std::string& filename)
 
     LOGFUNC;
 
-    LOG(std::string("Loading raw... ") + filename);
+    LOG(std::string("Loading raw...") + filename);
 
     type = rawtype;
     color = 0;
@@ -1026,9 +1026,11 @@ void Model::drawdecals(Texture shadowtexture, Texture bloodtexture, Texture bloo
             }
             if (decals[i].type == shadowdecal) {
                 DeleteDecal(i);
+                continue;
             }
             if ((decals[i].type == blooddecal || decals[i].type == blooddecalfast || decals[i].type == blooddecalslow) && decals[i].alivetime >= 60) {
                 DeleteDecal(i);
+                continue;
             }
         }
         glAlphaFunc(GL_GREATER, 0.0001);

@@ -21,8 +21,8 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
 /** Version number is either MAJOR.MINOR, or MAJOR.MINOR.PATCH if PATCH != 0 */
 const unsigned int VERSION_MAJOR = 1;
 const unsigned int VERSION_MINOR = 2;
-const unsigned int VERSION_PATCH = 2;
-const std::string VERSION_NUMBER = "1.2.2";
+const unsigned int VERSION_PATCH = 3;
+const std::string VERSION_NUMBER = "1.2.3";
 
 /** Set to "" for stable (tagged) builds, "-dev" for dev builds */
 const std::string VERSION_SUFFIX = "-dev";
@@ -40,7 +40,7 @@ const std::string VERSION_RELEASE = "";
  *      "1.2-dev (git ab12c34) [OSS Lugaru official]"
  *      "1.3.1 [Mageia 1.3.1-2.mga6]"
  */
-const std::string VERSION_STRING = "1.2.2-dev (git ee0d1ff)";
+const std::string VERSION_STRING = "1.2.3-dev (git ee0d1ff)";
 
 /** Build type (Release, Debug, RelWithDebInfo) to output to the terminal */
 const std::string VERSION_BUILD_TYPE = "";
