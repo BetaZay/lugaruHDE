@@ -44,16 +44,18 @@ jobs:
           binutils-mingw-w64-x86-64 \
           gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
           libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
-          libjpeg-dev zlib1g-dev
+          zlib1g-dev
 
-    # Download precompiled Zlib and PNG libraries for Windows cross-compiling
-    - name: Download Zlib and PNG libraries
+    # Download precompiled Zlib, PNG, and JPEG libraries for Windows cross-compiling
+    - name: Download Zlib, PNG, and JPEG libraries
       if: matrix.target == 'windows'
       run: |
         wget -q -O zlib-windows.zip "https://sourceforge.net/projects/gnuwin32/files/zlib/1.2.3/zlib-1.2.3-bin.zip/download"
         wget -q -O png-windows.zip "https://sourceforge.net/projects/gnuwin32/files/libpng/1.2.37/libpng-1.2.37-bin.zip/download"
+        wget -q -O jpeg-windows.zip "https://sourceforge.net/projects/gnuwin32/files/jpeg/6b/jpeg-6b-bin.zip/download"
         unzip zlib-windows.zip -d ${{ github.workspace }}/external/zlib
         unzip png-windows.zip -d ${{ github.workspace }}/external/png
+        unzip jpeg-windows.zip -d ${{ github.workspace }}/external/jpeg
 
     # Set reusable strings
     - name: Set reusable strings
@@ -86,6 +88,8 @@ jobs:
           -DZLIB_INCLUDE_DIR=${{ github.workspace }}/external/zlib/include \
           -DPNG_LIBRARY=${{ github.workspace }}/external/png/lib/libpng.lib \
           -DPNG_PNG_INCLUDE_DIR=${{ github.workspace }}/external/png/include \
+          -DJPEG_LIBRARY=${{ github.workspace }}/external/jpeg/lib/jpeg.lib \
+          -DJPEG_INCLUDE_DIR=${{ github.workspace }}/external/jpeg/include \
           -S ${{ github.workspace }}
 
     # Build
