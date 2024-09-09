@@ -43,12 +43,20 @@ jobs:
         7z x sdl2.zip -oSDL2
         setx SDL2_DIR "%cd%\\SDL2\\SDL2-2.0.16"
 
-    # Install OpenGL and other dependencies (Linux)
+    # Install OpenAL on Windows
+    - name: Install OpenAL (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        curl -L https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip -o openal.zip
+        7z x openal.zip -oOpenAL
+        setx OPENAL_DIR "%cd%\\OpenAL"
+
+    # Install OpenAL and other dependencies on Linux
     - name: Install dependencies (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
+        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libopenal-dev libsdl2-dev
 
     # Set reusable strings
     - name: Set reusable strings
