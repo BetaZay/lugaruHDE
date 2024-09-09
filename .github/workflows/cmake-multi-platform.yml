@@ -43,8 +43,22 @@ jobs:
         sudo apt-get install -y mingw-w64 \
           binutils-mingw-w64-x86-64 \
           gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
-          libopenal-dev libsdl2-dev \
           cmake make autoconf automake libtool pkg-config
+
+    # Download and set up precompiled SDL2 for Windows
+    - name: Download SDL2 for Windows
+      if: matrix.target == 'windows'
+      run: |
+        wget -q -O SDL2-windows.zip https://www.libsdl.org/release/SDL2-devel-2.0.20-mingw.tar.gz
+        tar -xzf SDL2-windows.zip -C ${{ github.workspace }}/external
+        mv ${{ github.workspace }}/external/SDL2-2.0.20/x86_64-w64-mingw32 ${{ github.workspace }}/external/SDL2
+
+    # Download and set up precompiled OpenAL for Windows
+    - name: Download OpenAL for Windows
+      if: matrix.target == 'windows'
+      run: |
+        wget -q -O openal-windows.zip https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip
+        unzip openal-windows.zip -d ${{ github.workspace }}/external/openal
 
     # Build and install libogg for cross-compiling
     - name: Build libogg for Windows
@@ -107,6 +121,10 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DSDL2_INCLUDE_DIR=${{ github.workspace }}/external/SDL2/include \
+          -DSDL2_LIBRARY=${{ github.workspace }}/external/SDL2/lib/libSDL2.a \
+          -DOPENAL_INCLUDE_DIR=${{ github.workspace }}/external/openal/include \
+          -DOPENAL_LIBRARY=${{ github.workspace }}/external/openal/lib/libOpenAL32.a \
           -DZLIB_LIBRARY=${{ github.workspace }}/external/zlib/lib/zlib.lib \
           -DZLIB_INCLUDE_DIR=${{ github.workspace }}/external/zlib/include \
           -DPNG_LIBRARY=${{ github.workspace }}/external/png/lib/libpng.lib \
