@@ -50,8 +50,8 @@ jobs:
     - name: Download Zlib and PNG libraries
       if: matrix.target == 'windows'
       run: |
-        wget -q -O zlib-windows.zip "https://example.com/zlib-windows.zip"
-        wget -q -O png-windows.zip "https://example.com/png-windows.zip"
+        wget -q -O zlib-windows.zip "https://sourceforge.net/projects/gnuwin32/files/zlib/1.2.3/zlib-1.2.3-bin.zip/download"
+        wget -q -O png-windows.zip "https://sourceforge.net/projects/gnuwin32/files/libpng/1.2.37/libpng-1.2.37-bin.zip/download"
         unzip zlib-windows.zip -d ${{ github.workspace }}/external
         unzip png-windows.zip -d ${{ github.workspace }}/external
 
