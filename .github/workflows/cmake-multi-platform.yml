@@ -17,11 +17,12 @@ jobs:
           - target: native
             c_compiler: gcc
             cpp_compiler: g++
-            runs-on: ubuntu-latest
           - target: windows
             c_compiler: x86_64-w64-mingw32-gcc
             cpp_compiler: x86_64-w64-mingw32-g++
-            runs-on: windows-latest
+
+    # Define the runner based on the platform
+    runs-on: ${{ matrix.target == 'native' && 'ubuntu-latest' || 'windows-latest' }}
 
     steps:
     - uses: actions/checkout@v4
