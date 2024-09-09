@@ -21,7 +21,6 @@ jobs:
             c_compiler: x86_64-w64-mingw32-gcc
             cpp_compiler: x86_64-w64-mingw32-g++
 
-    # Define the runner based on the platform
     runs-on: ${{ matrix.target == 'native' && 'ubuntu-latest' || 'windows-latest' }}
 
     env:
@@ -40,15 +39,19 @@ jobs:
           libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
           libpng-dev libjpeg-dev zlib1g-dev
 
-    # Install MSYS2 using Chocolatey and MinGW on Windows
-    - name: Install MSYS2 using Chocolatey (Windows)
+    # Install MSYS2 using Chocolatey and configure environment on Windows
+    - name: Install MSYS2 and tools using Chocolatey (Windows)
       if: matrix.target == 'windows'
       run: |
         choco install msys2 -y
-        
-        # Update MSYS2 and install MinGW and necessary libraries
+
+        # Ensure MSYS2 is updated and install CMake and necessary libraries
         C:\tools\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm"
         C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-openal mingw-w64-x86_64-SDL2 mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-zlib"
+
+        # Add CMake to the PATH
+        echo 'export PATH="/mingw64/bin:$PATH"' >> C:\tools\msys64\home\runner\.bashrc
+        C:\tools\msys64\usr\bin\bash.exe -lc "source ~/.bashrc"
 
     # Configure CMake for native build
     - name: Configure CMake (Ubuntu - Native)
@@ -70,20 +73,21 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DOPENAL_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -DOPENAL_LIBRARY=C:\tools\msys64\mingw64\lib\libopenal.a \
-          -DSDL2_INCLUDE_DIR=C:\tools\msys64\mingw64\include\SDL2 \
-          -DSDL2_LIBRARY=C:\tools\msys64\mingw64\lib\libSDL2.a \
-          -DZLIB_LIBRARY=C:\tools\msys64\mingw64\lib\libz.a \
-          -DZLIB_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -DPNG_LIBRARY=C:\tools\msys64\mingw64\lib\libpng.a \
-          -DPNG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -DJPEG_LIBRARY=C:\tools\msys64\mingw64\lib\libjpeg.a \
-          -DJPEG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -DVORBIS_LIBRARY=C:\tools\msys64\mingw64\lib\libvorbis.a \
-          -DVORBIS_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -DOGG_LIBRARY=C:\tools\msys64\mingw64\lib\libogg.a \
-          -DOGG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DOPENAL_INCLUDE_DIR=/mingw64/include \
+          -DOPENAL_LIBRARY=/mingw64/lib/libopenal.a \
+          -DSDL2_INCLUDE_DIR=/mingw64/include/SDL2 \
+          -DSDL2_LIBRARY=/mingw64/lib/libSDL2.a \
+          -DZLIB_LIBRARY=/mingw64/lib/libz.a \
+          -DZLIB_INCLUDE_DIR=/mingw64/include \
+          -DPNG_LIBRARY=/mingw64/lib/libpng.a \
+          -DPNG_INCLUDE_DIR=/mingw64/include \
+          -DJPEG_LIBRARY=/mingw64/lib/libjpeg.a \
+          -DJPEG_INCLUDE_DIR=/mingw64/include \
+          -DVORBIS_LIBRARY=/mingw64/lib/libvorbis.a \
+          -DVORBIS_INCLUDE_DIR=/mingw64/include \
+          -DOGG_LIBRARY=/mingw64/lib/libogg.a \
+          -DOGG_INCLUDE_DIR=/mingw64/include \
+          -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external \
           -S ${{ github.workspace }}"
 
     # Build for all targets
