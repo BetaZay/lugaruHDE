@@ -43,6 +43,13 @@ jobs:
         7z x sdl2.zip -oSDL2
         setx SDL2_DIR "%cd%\\SDL2\\SDL2-2.0.16"
 
+    # Install OpenGL and other dependencies (Linux)
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
+
     # Set reusable strings
     - name: Set reusable strings
       id: strings

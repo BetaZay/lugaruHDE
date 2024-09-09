@@ -206,8 +206,8 @@ find_package(OpenGL REQUIRED)
 
 # Windows is funky about OpenAL detection
 if(WIN32)
-    pkg_check_modules(OPENAL openal REQUIRED)
-    set(OPENAL_LIBRARY ${OPENAL_LIBRARIES})
+    find_package(OpenAL REQUIRED)
+    find_package(SDL2 REQUIRED)
 else(WIN32)
     find_package(OpenAL REQUIRED)
 endif(WIN32)
