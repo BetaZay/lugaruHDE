@@ -50,21 +50,6 @@ jobs:
         C:\tools\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm"
         C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-openal mingw-w64-x86_64-SDL2 mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-zlib"
 
-    # Cache SDL2 for Windows build
-    - name: Cache SDL for Windows
-      if: matrix.target == 'windows'
-      uses: actions/cache@v3
-      with:
-        path: C:\SDL2-*
-        key: ${{ runner.os }}-sdl-${{ env.SDL_VERSION }}
-
-    # Download SDL2 for Windows if cache miss
-    - name: Download SDL for Windows
-      if: matrix.target == 'windows' && steps.cache-windows-sdl.outputs.cache-hit != 'true'
-      run: |
-        Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.SDL_VERSION }}/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip" -OutFile C:\SDL2.zip
-        Expand-Archive C:\SDL2.zip -DestinationPath C:\
-
     # Configure CMake for native build
     - name: Configure CMake (Ubuntu - Native)
       if: matrix.target == 'native'
