@@ -200,17 +200,24 @@ if(APPLE)
 endif(APPLE)
 
 
-# SDL2 and OpenAL for Windows cross-compiling
+### Dependencies
+
+find_package(OpenGL REQUIRED)
+
+# Windows is funky about OpenAL detection
 if(WIN32)
-    set(SDL2_INCLUDE_DIR "/usr/x86_64-w64-mingw32/include/SDL2")
-    set(SDL2_LIBRARY "/usr/x86_64-w64-mingw32/lib/libSDL2.a")
-    set(OPENAL_INCLUDE_DIR "/usr/x86_64-w64-mingw32/include/AL")
-    set(OPENAL_LIBRARY "/usr/x86_64-w64-mingw32/lib/libOpenAL32.a")
-else()
-    # For native builds, use pkg-config to find SDL2
-    pkg_check_modules(SDL2 sdl2 REQUIRED)
+    pkg_check_modules(OPENAL openal REQUIRED)
+    set(OPENAL_LIBRARY ${OPENAL_LIBRARIES})
+else(WIN32)
     find_package(OpenAL REQUIRED)
-endif()
+endif(WIN32)
+
+# macOS has problems with using pkgconfig to find SDL2
+if(APPLE)
+    find_package(sdl2 REQUIRED)
+else(APPLE)
+    pkg_check_modules(SDL2 sdl2 REQUIRED)
+endif(APPLE)
 
 find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
@@ -218,18 +225,19 @@ find_package(ZLIB REQUIRED)
 find_package(OggVorbis REQUIRED)
 
 include_directories(
-    ${SDL2_INCLUDE_DIRS}
     ${OPENAL_INCLUDE_DIR}
     ${JPEG_INCLUDE_DIR}
     ${PNG_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIRS}
     ${VORBISFILE_INCLUDE_DIR}
     ${OGG_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/Source
 )
 
 set(LUGARU_LIBS ${OPENAL_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${ZLIB_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${VORBISFILE_LIBRARY} ${OGG_LIBRARY} ${PLATFORM_LIBS})
+
 
 ### Definitions
 
@@ -298,21 +306,18 @@ if(LINUX)
         add_definitions(-DDATA_DIR="${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}")
         set(LUGARU_DOCDIR ${CMAKE_INSTALL_DOCDIR})
         install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/lugaru DESTINATION ${CMAKE_INSTALL_BINDIR})
-        
-        # Install the Data directory and ensure all contents are included
-        install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data/ DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/Data
-            FILES_MATCHING PATTERN "*") # Ensures everything is copied
-        
+        # Trailing '/' is significant, it installs and _renames_ Data/ as the destination folder
+        install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data/ DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
         install(FILES ${CMAKE_SOURCE_DIR}/Dist/Linux/lugaru.appdata.xml DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/appdata)
         install(FILES ${CMAKE_SOURCE_DIR}/Dist/Linux/lugaru.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
         install(FILES ${CMAKE_SOURCE_DIR}/Dist/Linux/lugaru.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/128x128/apps)
         install(FILES ${CMAKE_SOURCE_DIR}/Dist/Linux/lugaru.6 DESTINATION ${CMAKE_INSTALL_MANDIR}/man6)
-    else()
-        message("You are building Lugaru without SYSTEM_INSTALL. Data will be installed next to the binary.")
+    else(SYSTEM_INSTALL)
+        message("You are building Lugaru without having enabled the SYSTEM_INSTALL option. It will default to looking for the data in the 'Data' directory next to the binary.")
         install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/lugaru DESTINATION ${CMAKE_INSTALL_PREFIX})
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data DESTINATION ${CMAKE_INSTALL_PREFIX})
-    endif()
-endif()
+    endif(SYSTEM_INSTALL)
+endif(LINUX)
 
 if(APPLE)
     # Assuming your binary is named 'lugaru', modify it if your binary name is different
