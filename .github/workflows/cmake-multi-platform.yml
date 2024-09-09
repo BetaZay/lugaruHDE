@@ -40,17 +40,15 @@ jobs:
           libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
           libpng-dev libjpeg-dev zlib1g-dev
 
-    # Install MSYS2 and MinGW on Windows
-    - name: Install MSYS2 and MinGW (Windows)
+    # Install MSYS2 using Chocolatey and MinGW on Windows
+    - name: Install MSYS2 using Chocolatey (Windows)
       if: matrix.target == 'windows'
       run: |
-        # Download and install MSYS2
-        Invoke-WebRequest -Uri https://repo.msys2.org/distrib/x86_64/msys2-x86_64-20230225.exe -OutFile msys2.exe
-        Start-Process -FilePath msys2.exe -ArgumentList '/S' -Wait
+        choco install msys2 -y
         
-        # Update MSYS2 and install MinGW packages
-        C:\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm"
-        C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-openal mingw-w64-x86_64-SDL2 mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-zlib"
+        # Update MSYS2 and install MinGW and necessary libraries
+        C:\tools\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm"
+        C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-openal mingw-w64-x86_64-SDL2 mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-zlib"
 
     # Cache SDL2 for Windows build
     - name: Cache SDL for Windows
@@ -87,20 +85,20 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DOPENAL_INCLUDE_DIR=C:\msys64\mingw64\include \
-          -DOPENAL_LIBRARY=C:\msys64\mingw64\lib\libopenal.a \
-          -DSDL2_INCLUDE_DIR=C:\msys64\mingw64\include\SDL2 \
-          -DSDL2_LIBRARY=C:\msys64\mingw64\lib\libSDL2.a \
-          -DZLIB_LIBRARY=C:\msys64\mingw64\lib\libz.a \
-          -DZLIB_INCLUDE_DIR=C:\msys64\mingw64\include \
-          -DPNG_LIBRARY=C:\msys64\mingw64\lib\libpng.a \
-          -DPNG_INCLUDE_DIR=C:\msys64\mingw64\include \
-          -DJPEG_LIBRARY=C:\msys64\mingw64\lib\libjpeg.a \
-          -DJPEG_INCLUDE_DIR=C:\msys64\mingw64\include \
-          -DVORBIS_LIBRARY=C:\msys64\mingw64\lib\libvorbis.a \
-          -DVORBIS_INCLUDE_DIR=C:\msys64\mingw64\include \
-          -DOGG_LIBRARY=C:\msys64\mingw64\lib\libogg.a \
-          -DOGG_INCLUDE_DIR=C:\msys64\mingw64\include \
+          -DOPENAL_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DOPENAL_LIBRARY=C:\tools\msys64\mingw64\lib\libopenal.a \
+          -DSDL2_INCLUDE_DIR=C:\tools\msys64\mingw64\include\SDL2 \
+          -DSDL2_LIBRARY=C:\tools\msys64\mingw64\lib\libSDL2.a \
+          -DZLIB_LIBRARY=C:\tools\msys64\mingw64\lib\libz.a \
+          -DZLIB_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DPNG_LIBRARY=C:\tools\msys64\mingw64\lib\libpng.a \
+          -DPNG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DJPEG_LIBRARY=C:\tools\msys64\mingw64\lib\libjpeg.a \
+          -DJPEG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DVORBIS_LIBRARY=C:\tools\msys64\mingw64\lib\libvorbis.a \
+          -DVORBIS_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
+          -DOGG_LIBRARY=C:\tools\msys64\mingw64\lib\libogg.a \
+          -DOGG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
           -S ${{ github.workspace }}
 
     # Build for all targets
