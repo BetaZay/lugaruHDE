@@ -44,8 +44,11 @@ jobs:
         sudo apt-get install -y mingw-w64 \
                                 libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev \
                                 libsdl2-dev libvorbis-dev libogg-dev
-        # Install MinGW OpenAL package
-        sudo apt-get install -y libopenal-dev gcc-mingw-w64-x86-64 libopenal1-mingw-w64-dev
+        # Manually download and set up OpenAL for MinGW
+        curl -L https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip -o openal.zip
+        unzip openal.zip -d OpenAL
+        export OPENAL_INCLUDE_DIR="${{ github.workspace }}/OpenAL/include"
+        export OPENAL_LIBRARY="${{ github.workspace }}/OpenAL/lib/libOpenAL32.dll.a"
 
     # Set reusable strings
     - name: Set reusable strings
@@ -73,6 +76,8 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
+          -DOPENAL_INCLUDE_DIR="${{ OPENAL_INCLUDE_DIR }}" \
+          -DOPENAL_LIBRARY="${{ OPENAL_LIBRARY }}" \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external \
           -S ${{ github.workspace }}
