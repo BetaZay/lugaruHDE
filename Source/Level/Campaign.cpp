@@ -112,7 +112,6 @@ void LoadCampaign() {
         return;
     }
 
-    int numLevels = campaignData["CampaignLevels"];
     campaignlevels.clear();
 
     // Loop through each level in the campaign

@@ -621,8 +621,8 @@ void Menu::drawModMenu() {
     int leftBoxW = 200;
     int leftBoxH = 400;
     int rightBoxX = leftBoxX + leftBoxW + menuPadding;
-    int rightBoxY = leftBoxY;
-    int rightBoxW = 300;  // Wider box for mod details
+    //int rightBoxY = leftBoxY;
+    //int rightBoxW = 300;  // Wider box for mod details
     int rightBoxH = leftBoxH;
 
     int cardHeight = 70;
