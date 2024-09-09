@@ -115,6 +115,8 @@ jobs:
           -DJPEG_INCLUDE_DIR=${{ github.workspace }}/external/jpeg/include \
           -DVORBIS_LIBRARY=${{ github.workspace }}/external/libvorbis/lib/libvorbis.a \
           -DVORBIS_INCLUDE_DIR=${{ github.workspace }}/external/libvorbis/include \
+          -DVORBISFILE_LIBRARY=${{ github.workspace }}/external/libvorbis/lib/libvorbisfile.a \
+          -DVORBISENC_LIBRARY=${{ github.workspace }}/external/libvorbis/lib/libvorbisenc.a \
           -DOGG_LIBRARY=${{ github.workspace }}/external/libogg/lib/libogg.a \
           -DOGG_INCLUDE_DIR=${{ github.workspace }}/external/libogg/include \
           -S ${{ github.workspace }}
