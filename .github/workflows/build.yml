@@ -1,54 +1,62 @@
-name: Build Lugaru
+name: CMake on multiple platforms
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "master" ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang]
+        include:
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up CMake
-        uses: actions/setup-cmake@v2
-        with:
-          cmake-version: '3.21.0'  # You can adjust this version as needed
-
-      - name: Set up MinGW (for Windows only)
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install mingw
-          echo "::add-path::C:\tools\mingw64\bin"
-
-      - name: Install dependencies (Linux)
+      - name: Install dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install -y libsdl2-dev libopenal-dev libogg-dev libvorbis-dev libjpeg-dev libpng-dev zlib1g-dev cmake g++
+          sudo apt install -y build-essential libsdl2-dev libopenal-dev libogg-dev libvorbis-dev libjpeg-dev libpng-dev zlib1g-dev cmake
 
-      - name: Install dependencies (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
         run: |
-          choco install sdl2 openal vorbis-tools zlib jpeg-turbo cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-          
-      - name: Configure and build
+          brew install cmake sdl2 openal libvorbis libogg libpng jpeg zlib
+
+      - name: Configure CMake
         run: |
-          cmake -B build -S .
-          cmake --build build --config Release
+          cmake -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S .
+
+      - name: Build with CMake
+        run: cmake --build build --config ${{ matrix.build_type }}
+
+      - name: Run tests
+        run: ctest --test-dir build
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: lugaru-build
+          name: lugaru-build-${{ matrix.os }}-${{ matrix.c_compiler }}
           path: build
