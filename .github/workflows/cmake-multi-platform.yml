@@ -40,6 +40,18 @@ jobs:
           libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
           libpng-dev libjpeg-dev zlib1g-dev
 
+    # Install MinGW and OpenAL manually for Windows
+    - name: Install MinGW and OpenAL (Windows)
+      if: matrix.target == 'windows'
+      run: |
+        # Download and install MinGW
+        Invoke-WebRequest https://sourceforge.net/projects/mingw-w64/files/latest/download -OutFile mingw.zip
+        Expand-Archive mingw.zip -DestinationPath C:\mingw
+
+        # Install OpenAL manually
+        Invoke-WebRequest https://openal-soft.org/openal-binaries/openal-soft-1.20.1-bin.zip -OutFile openal.zip
+        Expand-Archive openal.zip -DestinationPath $env:GITHUB_WORKSPACE/external/openal
+
     # Cache SDL2 for Windows build
     - name: Cache SDL for Windows
       if: matrix.target == 'windows'
@@ -54,7 +66,7 @@ jobs:
       run: |
         Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.SDL_VERSION }}/SDL2-devel-${{ env.SDL_VERSION }}-VC.zip" -OutFile C:\SDL2.zip
         Expand-Archive C:\SDL2.zip -DestinationPath C:\
-    
+
     # Install other dependencies for Windows
     - name: Install other dependencies (Windows)
       if: matrix.target == 'windows'
