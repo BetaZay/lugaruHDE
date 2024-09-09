@@ -65,7 +65,7 @@ jobs:
     - name: Configure CMake (Windows)
       if: matrix.target == 'windows'
       run: |
-        cmake -B ${{ github.workspace }}/build \
+        C:\tools\msys64\usr\bin\bash.exe -lc "cmake -B ${{ github.workspace }}/build \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
@@ -84,7 +84,7 @@ jobs:
           -DVORBIS_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
           -DOGG_LIBRARY=C:\tools\msys64\mingw64\lib\libogg.a \
           -DOGG_INCLUDE_DIR=C:\tools\msys64\mingw64\include \
-          -S ${{ github.workspace }}
+          -S ${{ github.workspace }}"
 
     # Build for all targets
     - name: Build
