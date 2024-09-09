@@ -213,7 +213,7 @@ if(WIN32)
 
     # Adjust SDL2 handling for Windows cross-compiling
     if(NOT DEFINED SDL2_INCLUDE_DIR OR NOT DEFINED SDL2_LIBRARY)
-        set(SDL2_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/SDL2/include")
+        set(SDL2_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/SDL2/include/SDL2")
         set(SDL2_LIBRARY "${CMAKE_SOURCE_DIR}/external/SDL2/lib/libSDL2.a")
     endif()
 else(WIN32)
