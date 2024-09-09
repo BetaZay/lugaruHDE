@@ -210,16 +210,16 @@ if(WIN32)
         set(OPENAL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/openal/include")
         set(OPENAL_LIBRARY "${CMAKE_SOURCE_DIR}/external/openal/lib/libOpenAL32.a")
     endif()
-else(WIN32)
-    find_package(OpenAL REQUIRED)
-endif(WIN32)
 
-# macOS has problems with using pkgconfig to find SDL2
-if(APPLE)
-    find_package(sdl2 REQUIRED)
-else(APPLE)
+    # Adjust SDL2 handling for Windows cross-compiling
+    if(NOT DEFINED SDL2_INCLUDE_DIR OR NOT DEFINED SDL2_LIBRARY)
+        set(SDL2_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/SDL2/include")
+        set(SDL2_LIBRARY "${CMAKE_SOURCE_DIR}/external/SDL2/lib/libSDL2.a")
+    endif()
+else(WIN32)
+    # For native builds, use pkg-config to find SDL2
     pkg_check_modules(SDL2 sdl2 REQUIRED)
-endif(APPLE)
+endif(WIN32)
 
 find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
@@ -228,18 +228,18 @@ find_package(OggVorbis REQUIRED)
 
 include_directories(
     ${OPENAL_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIR}
     ${JPEG_INCLUDE_DIR}
     ${PNG_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
-    ${SDL2_INCLUDE_DIRS}
     ${VORBISFILE_INCLUDE_DIR}
     ${OGG_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/Source
     ${CMAKE_SOURCE_DIR}/external
 )
 
-set(LUGARU_LIBS ${OPENAL_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${ZLIB_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${VORBISFILE_LIBRARY} ${OGG_LIBRARY} ${PLATFORM_LIBS})
+set(LUGARU_LIBS ${OPENAL_LIBRARY} ${SDL2_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${ZLIB_LIBRARIES} ${OPENGL_LIBRARIES} ${VORBISFILE_LIBRARY} ${OGG_LIBRARY} ${PLATFORM_LIBS})
 
 ### Definitions
 
