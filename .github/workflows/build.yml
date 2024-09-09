@@ -1,0 +1,54 @@
+name: Build Lugaru
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set up CMake
+        uses: scikit-build/cmake-action@v3
+        with:
+          cmake-version: '3.21.0'  # Or your required CMake version
+
+      - name: Set up MinGW (for Windows only)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install mingw
+          echo "::add-path::C:\tools\mingw64\bin"
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install libsdl2-dev libopenal-dev libogg-dev libvorbis-dev libjpeg-dev libpng-dev zlib1g-dev cmake g++
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install sdl2 openal vorbis-tools zlib jpeg-turbo cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          
+      - name: Configure and build
+        run: |
+          cmake -B build -S .
+          cmake --build build --config Release
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lugaru-build
+          path: build
