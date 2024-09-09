@@ -44,7 +44,16 @@ jobs:
           binutils-mingw-w64-x86-64 \
           gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
           libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
-          libpng-dev libjpeg-dev
+          libjpeg-dev zlib1g-dev
+
+    # Download precompiled Zlib and PNG libraries for Windows cross-compiling
+    - name: Download Zlib and PNG libraries
+      if: matrix.target == 'windows'
+      run: |
+        wget -q -O zlib-windows.zip "https://example.com/zlib-windows.zip"
+        wget -q -O png-windows.zip "https://example.com/png-windows.zip"
+        unzip zlib-windows.zip -d ${{ github.workspace }}/external
+        unzip png-windows.zip -d ${{ github.workspace }}/external
 
     # Set reusable strings
     - name: Set reusable strings
@@ -73,7 +82,8 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external \
+          -DINCLUDE_DIRECTORIES="${{ github.workspace }}/external/zlib/include;${{ github.workspace }}/external/png/include" \
+          -DLIBRARY_DIRECTORIES="${{ github.workspace }}/external/zlib/lib;${{ github.workspace }}/external/png/lib" \
           -S ${{ github.workspace }}
 
     # Build
