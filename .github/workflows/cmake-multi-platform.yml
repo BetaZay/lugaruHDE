@@ -52,8 +52,8 @@ jobs:
       run: |
         wget -q -O zlib-windows.zip "https://sourceforge.net/projects/gnuwin32/files/zlib/1.2.3/zlib-1.2.3-bin.zip/download"
         wget -q -O png-windows.zip "https://sourceforge.net/projects/gnuwin32/files/libpng/1.2.37/libpng-1.2.37-bin.zip/download"
-        unzip zlib-windows.zip -d ${{ github.workspace }}/external
-        unzip png-windows.zip -d ${{ github.workspace }}/external
+        unzip zlib-windows.zip -d ${{ github.workspace }}/external/zlib
+        unzip png-windows.zip -d ${{ github.workspace }}/external/png
 
     # Set reusable strings
     - name: Set reusable strings
@@ -82,8 +82,10 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DINCLUDE_DIRECTORIES="${{ github.workspace }}/external/zlib/include;${{ github.workspace }}/external/png/include" \
-          -DLIBRARY_DIRECTORIES="${{ github.workspace }}/external/zlib/lib;${{ github.workspace }}/external/png/lib" \
+          -DZLIB_LIBRARY=${{ github.workspace }}/external/zlib/lib/zlib.lib \
+          -DZLIB_INCLUDE_DIR=${{ github.workspace }}/external/zlib/include \
+          -DPNG_LIBRARY=${{ github.workspace }}/external/png/lib/libpng.lib \
+          -DPNG_PNG_INCLUDE_DIR=${{ github.workspace }}/external/png/include \
           -S ${{ github.workspace }}
 
     # Build
