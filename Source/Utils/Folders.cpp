@@ -13,7 +13,6 @@
 #include <unordered_set>
 #include <algorithm> // Needed for std::sort
 #include <nlohmann/json.hpp> // Include JSON library
-#include "../../../../../../usr/include/sys/stat.h"
 
 #if PLATFORM_UNIX
 #include <pwd.h>

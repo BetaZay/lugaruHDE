@@ -37,6 +37,7 @@ jobs:
         7z x sdl2.zip -oSDL2
         setx SDL2_DIR "%cd%\\SDL2\\SDL2-2.0.16"
         setx CMAKE_PREFIX_PATH "%cd%\\SDL2\\SDL2-2.0.16\\lib\\cmake\\SDL2"
+        set SDL2_DIR=%cd%\SDL2\SDL2-2.0.16
 
     # Install OpenAL on Windows
     - name: Install OpenAL (Windows)
@@ -70,7 +71,7 @@ jobs:
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cmake -B ${{ steps.strings.outputs.build-output-dir }} -DOPENAL_INCLUDE_DIR="%cd%\\OpenAL\\include" -DOPENAL_LIBRARY="%cd%\\OpenAL\\lib\\OpenAL32.lib" -DSDL2_DIR="%cd%\\SDL2\\SDL2-2.0.16" -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external -S ${{ github.workspace }}
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} -DOPENAL_INCLUDE_DIR="%cd%\\OpenAL\\include" -DOPENAL_LIBRARY="%cd%\\OpenAL\\lib\\OpenAL32.lib" -DSDL2_DIR="%SDL2_DIR%" -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external -S ${{ github.workspace }}
 
     # Build
     - name: Build
