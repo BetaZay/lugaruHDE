@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: fedora:latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -19,27 +19,33 @@ jobs:
             c_compiler: gcc
             cpp_compiler: g++
           - target: windows
-            c_compiler: mingw64-gcc
-            cpp_compiler: mingw64-g++
+            c_compiler: x86_64-w64-mingw32-gcc
+            cpp_compiler: x86_64-w64-mingw32-g++
 
     steps:
     - uses: actions/checkout@v4
 
-    # Install dependencies on Fedora for native build
-    - name: Install dependencies (Fedora - Native)
+    # Install dependencies on Ubuntu for native build
+    - name: Install dependencies (Ubuntu - Native)
       if: matrix.target == 'native'
       run: |
-        sudo dnf -q -y install gcc gcc-c++ cmake make \
-          pkgconfig(openal) pkgconfig(sdl2) pkgconfig(glu) \
-          pkgconfig(libpng) pkgconfig(libjpeg) pkgconfig(vorbis) \
-          pkgconfig(vorbisfile) pkgconfig(ogg) pkgconfig(jsoncpp)
+        sudo apt-get update
+        sudo apt-get install -y gcc g++ cmake make \
+          libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev \
+          libopenal-dev libsdl2-dev libvorbis-dev libogg-dev \
+          libpng-dev libjpeg-dev
 
-    # Install dependencies on Fedora for cross-compiling to Windows
-    - name: Install dependencies (Fedora - Windows)
+    # Install dependencies on Ubuntu for cross-compiling to Windows
+    - name: Install dependencies (Ubuntu - Windows)
       if: matrix.target == 'windows'
       run: |
-        sudo dnf -q -y install mingw64-gcc mingw64-gcc-c++ mingw64-binutils mingw64-headers \
-          mingw64-libjpeg-turbo mingw64-libpng mingw64-SDL2 mingw64-libvorbis mingw64-libogg mingw64-openal-soft mingw64-jsoncpp
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 \
+          binutils-mingw-w64-x86-64 \
+          gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+          libopenal1-mingw-w64 libsdl2-dev-mingw-w64 \
+          libvorbis-mingw-w64 libogg-mingw-w64 libpng-mingw-w64 \
+          libjpeg-mingw-w64
 
     # Set reusable strings
     - name: Set reusable strings
@@ -49,7 +55,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     # Configure CMake for native build
-    - name: Configure CMake (Fedora - Native)
+    - name: Configure CMake (Ubuntu - Native)
       if: matrix.target == 'native'
       run: |
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
@@ -60,14 +66,13 @@ jobs:
           -S ${{ github.workspace }}
 
     # Configure CMake for cross-compiling to Windows
-    - name: Configure CMake (Fedora - Windows)
+    - name: Configure CMake (Ubuntu - Windows)
       if: matrix.target == 'windows'
       run: |
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
-          -DCMAKE_TOOLCHAIN_FILE=/usr/share/mingw/toolchain-mingw64.cmake \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external \
           -S ${{ github.workspace }}
