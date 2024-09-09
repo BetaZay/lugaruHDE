@@ -33,16 +33,19 @@ jobs:
       if: matrix.target == 'native'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libopenal-dev libsdl2-dev libvorbis-dev libogg-dev
+        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev \
+                                libopenal-dev libsdl2-dev libvorbis-dev libogg-dev
 
     # Install dependencies on Ubuntu for cross-compiling to Windows
     - name: Install dependencies (Linux - Windows)
       if: matrix.target == 'windows'
       run: |
         sudo apt-get update
-        sudo apt-get install -y mingw-w64
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
-        sudo apt-get install -y libsdl2-dev libvorbis-dev libogg-dev
+        sudo apt-get install -y mingw-w64 \
+                                libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev \
+                                libsdl2-dev libvorbis-dev libogg-dev
+        # Install MinGW OpenAL package
+        sudo apt-get install -y libopenal-dev gcc-mingw-w64-x86-64 libopenal1-mingw-w64-dev
 
     # Set reusable strings
     - name: Set reusable strings
