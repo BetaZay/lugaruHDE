@@ -8,47 +8,38 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: fedora:latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        build_type: [Release]
         target: [native, windows]
+        build_type: [Release]
         include:
-          - os: ubuntu-latest
-            target: native
+          - target: native
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            target: windows
-            c_compiler: x86_64-w64-mingw32-gcc
-            cpp_compiler: x86_64-w64-mingw32-g++
-    
+          - target: windows
+            c_compiler: mingw64-gcc
+            cpp_compiler: mingw64-g++
+
     steps:
     - uses: actions/checkout@v4
 
-    # Install dependencies on Ubuntu for native build
-    - name: Install dependencies (Linux - Native)
+    # Install dependencies on Fedora for native build
+    - name: Install dependencies (Fedora - Native)
       if: matrix.target == 'native'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev \
-                                libopenal-dev libsdl2-dev libvorbis-dev libogg-dev
+        sudo dnf -q -y install gcc gcc-c++ cmake make \
+          pkgconfig(openal) pkgconfig(sdl2) pkgconfig(glu) \
+          pkgconfig(libpng) pkgconfig(libjpeg) pkgconfig(vorbis) \
+          pkgconfig(vorbisfile) pkgconfig(ogg) pkgconfig(jsoncpp)
 
-    # Install dependencies on Ubuntu for cross-compiling to Windows
-    - name: Install dependencies (Linux - Windows)
+    # Install dependencies on Fedora for cross-compiling to Windows
+    - name: Install dependencies (Fedora - Windows)
       if: matrix.target == 'windows'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y mingw-w64 \
-                                libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev \
-                                libsdl2-dev libvorbis-dev libogg-dev
-        # Manually download and set up OpenAL for MinGW
-        curl -L https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip -o openal.zip
-        unzip openal.zip -d OpenAL
-        export OPENAL_INCLUDE_DIR="${{ github.workspace }}/OpenAL/include"
-        export OPENAL_LIBRARY="${{ github.workspace }}/OpenAL/lib/libOpenAL32.dll.a"
+        sudo dnf -q -y install mingw64-gcc mingw64-gcc-c++ mingw64-binutils mingw64-headers \
+          mingw64-libjpeg-turbo mingw64-libpng mingw64-SDL2 mingw64-libvorbis mingw64-libogg mingw64-openal-soft mingw64-jsoncpp
 
     # Set reusable strings
     - name: Set reusable strings
@@ -58,7 +49,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     # Configure CMake for native build
-    - name: Configure CMake (Linux - Native)
+    - name: Configure CMake (Fedora - Native)
       if: matrix.target == 'native'
       run: |
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
@@ -69,15 +60,14 @@ jobs:
           -S ${{ github.workspace }}
 
     # Configure CMake for cross-compiling to Windows
-    - name: Configure CMake (Linux - Windows)
+    - name: Configure CMake (Fedora - Windows)
       if: matrix.target == 'windows'
       run: |
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_SYSTEM_NAME=Windows \
-          -DOPENAL_INCLUDE_DIR="${{ OPENAL_INCLUDE_DIR }}" \
-          -DOPENAL_LIBRARY="${{ OPENAL_LIBRARY }}" \
+          -DCMAKE_TOOLCHAIN_FILE=/usr/share/mingw/toolchain-mingw64.cmake \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DINCLUDE_DIRECTORIES=${{ github.workspace }}/external \
           -S ${{ github.workspace }}
