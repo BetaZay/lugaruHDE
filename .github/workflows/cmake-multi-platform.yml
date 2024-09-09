@@ -52,7 +52,7 @@ jobs:
       run: |
         wget -q -O zlib-windows.zip "https://sourceforge.net/projects/gnuwin32/files/zlib/1.2.3/zlib-1.2.3-bin.zip/download"
         wget -q -O png-windows.zip "https://sourceforge.net/projects/gnuwin32/files/libpng/1.2.37/libpng-1.2.37-bin.zip/download"
-        wget -q -O jpeg-windows.zip "https://sourceforge.net/projects/gnuwin32/files/jpeg/6b/jpeg-6b-bin.zip/download"
+        wget -q -O jpeg-windows.zip "https://sourceforge.net/projects/gnuwin32/files/jpeg/6b-4/jpeg-6b-4-bin.zip/download"
         unzip zlib-windows.zip -d ${{ github.workspace }}/external/zlib
         unzip png-windows.zip -d ${{ github.workspace }}/external/png
         unzip jpeg-windows.zip -d ${{ github.workspace }}/external/jpeg
