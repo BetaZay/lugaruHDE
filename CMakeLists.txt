@@ -204,10 +204,12 @@ endif(APPLE)
 
 find_package(OpenGL REQUIRED)
 
-# Windows is funky about OpenAL detection
+# Adjust OpenAL handling for Windows cross-compiling
 if(WIN32)
-    pkg_check_modules(OPENAL openal REQUIRED)
-    set(OPENAL_LIBRARY ${OPENAL_LIBRARIES})
+    if(NOT DEFINED OPENAL_INCLUDE_DIR OR NOT DEFINED OPENAL_LIBRARY)
+        set(OPENAL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/openal/include")
+        set(OPENAL_LIBRARY "${CMAKE_SOURCE_DIR}/external/openal/lib/libOpenAL32.a")
+    endif()
 else(WIN32)
     find_package(OpenAL REQUIRED)
 endif(WIN32)
@@ -238,7 +240,6 @@ include_directories(
 )
 
 set(LUGARU_LIBS ${OPENAL_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${ZLIB_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${VORBISFILE_LIBRARY} ${OGG_LIBRARY} ${PLATFORM_LIBS})
-
 
 ### Definitions
 
